@@ -45,8 +45,10 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         python-version: ["3.11", "3.12", "3.13"]
     env:
-      # The 48 000-file scale test is opt-in (tests/test_scale.py enables it only when this
-      # equals exactly "1"), so a PR never pays for it. `-rs` in the pytest step below is
+      # The scale test is opt-in (tests/test_scale.py enables it only when this equals exactly
+      # "1"), so a PR never pays for it. Its default shape is 50 000 train + 10 000 test files,
+      # which measured 487.7 s cold on the authoring machine (2026-09-22) - eight minutes per
+      # matrix cell is why it is not turned on here. `-rs` in the pytest step below is
       # what proves it was skipped on purpose rather than silently absent.
       DATASET_DOCTOR_SCALE: "0"
       PYTHONPATH: .
@@ -69,8 +71,13 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m pip install --upgrade pip build
+      - run: python -m pip install --upgrade pip build twine
       - run: python -m build
+      - name: Check both distributions before anyone can install them
+        # `python -m build` makes a wheel and an sdist; PyPA's release flow is to validate both
+        # metadata surfaces, because a README that fails to render or a licence file missing from
+        # the archive is a packaging-index problem, not a Python problem.
+        run: python -m twine check dist/*
       - name: Install the wheel in a clean environment and audit through it
         # The control fixture has to come out SAFE under --ci, which is the same claim
         # README makes about it, checked against the artefact instead of the source tree.

@@ -1,8 +1,10 @@
 # Release checklist
 
-Nothing in this file has been executed. Every step below is a step a human authorises; the
-publishing-blocking ones are marked as such. `docs/PROJECT_STATE.md` section 10 records the
-same boundary from the project side.
+Sections 1 to 3 are checks a person can run on a laptop, and section 1 and 2 have been run
+(2026-09-22, Windows 11 / Python 3.13.1) - `docs/PROJECT_STATE.md` section 7 carries the numbers
+that run produced. Section 4 has not been executed and must not be: every step in it is
+irreversible in public, and `docs/PROJECT_STATE.md` section 10 records the same boundary from the
+project side.
 
 ## 1. Reproduce the release locally
 
@@ -15,8 +17,27 @@ ruff format --check . && ruff check .
 mypy dataset_doctor_audit
 PYTHONPATH=. pytest -rA
 python -m build                                        # wheel + sdist into dist/
-python -m pip install dist/*.whl && cd somewhere-else && dataset-doctor-audit audit <checkout>/examples/safe_tabular --ci
+python -m twine check dist/*                           # both artefacts, not just the wheel
 ```
+
+Then install what was built, twice, in two environments that cannot see the source tree. A
+repository checkout passing its own tests says nothing about whether a user can install the
+release; `PYTHONPATH` and the current directory must be outside the checkout for the claim to mean
+anything:
+
+```bash
+python -m venv .install-wheel && .install-wheel/bin/python -m pip install dist/*.whl
+python -m venv .install-sdist  && .install-sdist/bin/python -m pip install dist/*.tar.gz
+# in each, from a directory that is not the checkout, against a *copy* of the example data:
+<venv>/bin/dataset-doctor-audit --help
+<venv>/bin/dataset-doctor-audit audit ./safe_tabular                 # exit 0, three report files
+<venv>/bin/dataset-doctor-audit audit ./unsafe_target_leakage --ci   # exit 1, INVALID
+<venv>/bin/dataset-doctor-audit audit ./safe_tabular --save-snapshot v1
+<venv>/bin/dataset-doctor-audit audit ./safe_tabular --baseline v1   # DD018/DD019 not NOT_RUN
+```
+
+The sdist install is the one that rebuilds from source, so it re-checks the build backend's file
+selection; a module the sdist drops is a bug only this step can see.
 
 Then record what was actually measured, in this order:
 

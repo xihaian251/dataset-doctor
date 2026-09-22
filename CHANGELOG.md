@@ -58,6 +58,23 @@ Everything between 0.1.0 and here is verification, not behaviour: no rule id, de
 
 ### Fixed
 
+- **Two defects the identity migration itself introduced, both found by auditing every changed
+  line against a pure token substitution rather than by the test suite.** `_find_config` and
+  `splitting._carry_config` lost their `dataset-doctor.yml` candidate (both lists ended up with
+  `dataset-doctor.yaml` twice), so a dataset whose config used the short extension stopped being
+  discovered - silently, because no test had covered that spelling; the new
+  `test_a_config_spelt_dot_yml_is_still_discovered_and_its_declarations_apply` fails when the
+  candidate is deleted, which is how both directions were checked. And the Apache `LICENSE` text
+  gained characters on its header URL line, which matters because section 4 requires the
+  unmodified text to travel with a redistributed work; it is byte-identical to
+  `www.apache.org/licenses/LICENSE-2.0.txt` again except for the copyright line.
+- **A test fixture embedded the developer's own Windows username** (`C:\Users\<name>\...`) in cell
+  data. The path is fabricated either way - the test is about backslashes surviving the CSV layer -
+  so it now uses `C:\Users\example\`, and neither archive ships a real account name.
+- `.github/workflows/ci.yml` ran `python -m build` but never validated the two artefacts it made.
+  `twine check dist/*` is now a CI step, so a README that fails to render or a licence file missing
+  from the sdist is caught on every push rather than at release time.
+
 - **A fresh clone could not run.** An unanchored `reports/` pattern in `.gitignore` matched
   `dataset_doctor/reports/` (the package's name before the identity change above), so four
   report-writer modules were never committed and the first
