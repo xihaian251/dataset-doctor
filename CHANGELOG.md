@@ -70,7 +70,11 @@ Everything between 0.1.0 and here is verification, not behaviour: no rule id, de
   `www.apache.org/licenses/LICENSE-2.0.txt` again except for the copyright line.
 - **A test fixture embedded the developer's own Windows username** (`C:\Users\<name>\...`) in cell
   data. The path is fabricated either way - the test is about backslashes surviving the CSV layer -
-  so it now uses `C:\Users\example\`, and neither archive ships a real account name.
+  so it now uses `C:\Users\example\`, and neither archive ships a real account name. Scanning the
+  rebuilt sdist then caught the one remaining machine-named path, in `DD018`'s worked example, where
+  the account name had been masked but the rest of the author's workspace was still visible; it is
+  genericised too. What the scan still reports is the literal string `C:\Users` inside prose and
+  fixtures that are *about* Windows path handling, which is not a leak and cannot be removed.
 - `.github/workflows/ci.yml` ran `python -m build` but never validated the two artefacts it made.
   `twine check dist/*` is now a CI step, so a README that fails to render or a licence file missing
   from the sdist is caught on every push rather than at release time.
