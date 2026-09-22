@@ -182,6 +182,23 @@ def detect_split_integrity(ctx: AuditContext) -> list[Any]:
     return findings
 
 
+def _declared_path(ctx: AuditContext, raw: str) -> str:
+    """How a reviewer locates a file: dataset-relative, never the caller's absolute path.
+
+    The resolved key groups the collision; it is not what gets printed, because reports are
+    written to be shared and `AGENTS.md` promises evidence carries relative paths.
+    """
+    from pathlib import Path
+
+    candidate = Path(raw).expanduser()
+    if not candidate.is_absolute():
+        candidate = ctx.adapter.root / raw
+    try:
+        return ctx.adapter.relative(candidate)
+    except OSError:  # an unresolvable declared path is still better reported as declared
+        return Path(raw).as_posix()
+
+
 def _path_collisions(ctx: AuditContext) -> list[dict[str, Any]]:
     from pathlib import Path
 
@@ -191,23 +208,26 @@ def _path_collisions(ctx: AuditContext) -> list[dict[str, Any]]:
         return []
 
     resolved: dict[str, list[str]] = {}
+    shown: dict[str, str] = {}
     for split in ctx.spec.splits:
         try:
             key = str(Path(split.path).expanduser().resolve())
         except OSError:
             key = str(split.path)
         resolved.setdefault(key, []).append(split.name)
+        shown.setdefault(key, _declared_path(ctx, str(split.path)))
     out: list[dict[str, Any]] = []
     for key, names in sorted(resolved.items()):
         if len(names) > 1:
             first, second = names[0], names[1]
+            path = shown[key]
             out.append(
                 {
                     "title": f"Splits {first} and {second} point at the same path",
                     "a": first,
                     "b": second,
-                    "description": f"Both '{first}' and '{second}' resolve to {key}.",
-                    "evidence": {"path": key, "splits": names},
+                    "description": f"Both '{first}' and '{second}' resolve to the same file: {path}.",
+                    "evidence": {"path": path, "splits": names},
                 }
             )
     return out

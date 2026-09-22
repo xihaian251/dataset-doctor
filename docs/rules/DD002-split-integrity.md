@@ -87,7 +87,9 @@ Measured from the test suite (`tests/test_structure.py`):
 
 - `test_dd002_two_declared_splits_pointing_at_one_file_is_a_blocking_configuration` -
   train and test declared on one CSV: `CRITICAL`, `FAIL`, `BLOCKING`,
-  `metadata.reason == "shared_path"`.
+  `metadata.reason == "shared_path"`. `evidence.path` is the *declared, dataset-relative*
+  path (`cohort.csv`); the resolved path is the grouping key and is never printed, because
+  a report is written to be shared (`tests/test_privacy.py` asserts it suite-wide).
 - `test_dd002_a_split_read_from_a_column_is_not_reported_as_a_shared_path` - the same
   file with `temporal.split_column: split` yields `split_sizes == {"train": 30,
   "test": 10}` and **no** `shared_path` finding.

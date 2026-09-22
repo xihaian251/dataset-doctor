@@ -22,11 +22,15 @@ report".
   is no code path that copies a scanned cell into a report. Label values are reported where a
   finding needs them (a conflict or a relabel is meaningless without them); sample text and image
   pixels never are.
-- **Relative paths for data.** Sample ids and reported paths are relative to the dataset root, so
-  a report does not carry your home directory or your account name. Two exceptions, both by design:
-  a diff's `right` label is the resolved absolute path of the audited directory
-  (`docs/rules/DD018`), and an error message may echo a path you typed. Reports intended for
-  outside the lab should be reviewed with that in mind.
+- **Relative paths for data.** No finding and no coverage entry carries an absolute path: `evidence`,
+  `description`, `location.paths` and `coverage.unreadable_files` are relative to the dataset root, so
+  a report does not carry your home directory or your account name through a finding. `tests/test_privacy.py`
+  asserts that over the committed fixtures and the report renderers, walking the dumped values rather than
+  grepping the serialised text. Three exceptions, all by design and all outside the findings: the report
+  header and `identity.root_path` echo the path you typed (so the header does carry it), a diff's `right`
+  label is the resolved absolute path of the audited directory (`docs/rules/DD018`), and the repair plan's
+  commands embed the root because a command you cannot paste is no use. Reports intended for outside the
+  lab should be reviewed with that in mind.
 - **Report contents are not redacted for you.** `report.json` contains column names, label values,
   ids, sizes, digests and a config snapshot. Treat it with the same care as a data dictionary -
   which is usually less sensitive than the data, but not nothing.

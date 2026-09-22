@@ -235,6 +235,11 @@ def test_dd002_two_declared_splits_pointing_at_one_file_is_a_blocking_configurat
     assert collisions, "one file serving both roles means the evaluation set is the training set"
     assert collisions[0].severity is Severity.CRITICAL
     assert collisions[0].formal_impact is FormalImpact.BLOCKING
+    # The grouping key is the resolved path; what a reviewer is shown is the declared one.
+    # `AGENTS.md` promises evidence holds relative paths, and reports get attached to papers.
+    assert collisions[0].evidence["path"] == "cohort.csv"
+    assert str(root) not in collisions[0].description
+    assert str(root.resolve()) not in collisions[0].description
 
 
 def test_dd002_a_split_read_from_a_column_is_not_reported_as_a_shared_path(tmp_path: Path, run_audit: Any) -> None:

@@ -45,7 +45,10 @@ class TabularAdapter(DatasetAdapter):
         if path.is_file():
             return [path]
         if not path.is_dir():
-            self.unreadable.append({"path": str(path), "reason": "split path does not exist"})
+            # `relative`, not `str`: these entries are copied verbatim into DD016's evidence,
+            # into `location.paths`, and into `coverage.unreadable_files`, and a report is
+            # written to be attached to a paper.
+            self.unreadable.append({"path": self.relative(path), "reason": "split path does not exist"})
             return []
         files = sorted(
             f
@@ -53,7 +56,7 @@ class TabularAdapter(DatasetAdapter):
             if f.is_file() and f.suffix.lower() in TABULAR_SUFFIXES and not f.name.startswith(".")
         )
         if not files:
-            self.unreadable.append({"path": str(path), "reason": "no tabular file found"})
+            self.unreadable.append({"path": self.relative(path), "reason": "no tabular file found"})
         return files
 
     @staticmethod
@@ -101,9 +104,8 @@ class TabularAdapter(DatasetAdapter):
             try:
                 frame = self._read(file, split.name)
             except Exception as exc:  # surfaced as DD016/UNSUPPORTED, not a crash
-                self.unreadable.append({"path": str(file), "reason": f"{type(exc).__name__}: {exc}"})
+                self.unreadable.append({"path": self.relative(file), "reason": f"{type(exc).__name__}: {exc}"})
                 continue
-            frame.attrs["source_files"] = [str(file)]
             frames.append(frame)
         if not frames:
             frame = pd.DataFrame()
