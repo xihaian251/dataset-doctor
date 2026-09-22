@@ -20,7 +20,7 @@ import pytest
 from conftest import TABULAR_CONFIG, row, write_rows
 
 from dataset_doctor.errors import DatasetDoctorError
-from dataset_doctor.models import AuditStatus, EvalSafety, FormalImpact, Severity
+from dataset_doctor.models import AuditStatus, EvalSafety, EvidenceType, FormalImpact, Severity
 
 COLUMNS = ["record_id", "patient_id", "age", "sex", "bmi", "value", "target"]
 
@@ -532,6 +532,124 @@ def test_dd001_asserts_the_identity_baseline_every_other_finding_cites(tmp_path:
     only = findings[0]
     assert only.severity is Severity.INFO and only.status is AuditStatus.PASS
     assert only.formal_impact is FormalImpact.NONE
+    assert only.evidence_type is EvidenceType.DETERMINISTIC
     assert only.evidence["dataset_id"] == result.identity.dataset_id
     assert only.evidence["split_sizes"] == {"train": 30, "test": 10}
     assert len(only.evidence["manifest_hash"]) == 32
+
+
+# -------------------------------------------------- DD010: where an unlabelled row matters
+def test_dd010_an_unlabelled_test_row_and_an_unlabelled_train_row_are_different_problems(
+    tmp_path: Path, run_audit: Any
+) -> None:
+    """The quality/validity split has to be visible in the data model, not in prose.
+
+    The same defect - a blank label - is a fact about the training corpus in one place and
+    an unagreed change to a metric denominator in the other. Spec section 220 makes that the
+    point of the whole tool, so the asymmetry is pinned here to a rule id rather than left
+    to a colour in a renderer.
+    """
+    eval_root = _root(tmp_path, "eval_unlabelled")
+    write_rows(eval_root / "train.csv", [row(f"r{i:03d}", f"p{i // 8:02d}", index=i) for i in range(40)], COLUMNS)
+    test_rows = [row(f"t{i:03d}", f"q{i // 4:02d}", index=40 + i) for i in range(20)]
+    for record in test_rows[:3]:
+        record["target"] = ""
+    write_rows(eval_root / "test.csv", test_rows, COLUMNS)
+
+    in_eval = run_audit(eval_root).by_rule("DD010")
+    assert len(in_eval) == 1
+    assert in_eval[0].status is AuditStatus.WARNING
+    assert in_eval[0].severity is Severity.HIGH
+    assert in_eval[0].formal_impact is FormalImpact.POTENTIAL
+    assert in_eval[0].evidence["unlabeled_total"] == 3
+    assert in_eval[0].evidence["by_split"] == {"test": 3}
+    assert in_eval[0].evidence["eval_split_hits"] == ["test"]
+    assert in_eval[0].location.paths and all(":" not in path[:3] for path in in_eval[0].location.paths), (
+        "the evidence must name rows a reviewer can open, not the caller's directory"
+    )
+
+    train_root = _root(tmp_path, "train_unlabelled")
+    train_rows = [row(f"r{i:03d}", f"p{i // 8:02d}", index=i) for i in range(40)]
+    for record in train_rows[:2]:
+        record["target"] = ""
+    write_rows(train_root / "train.csv", train_rows, COLUMNS)
+    write_rows(train_root / "test.csv", [row(f"t{i:03d}", f"q{i // 4:02d}", index=40 + i) for i in range(20)], COLUMNS)
+
+    in_train = run_audit(train_root).by_rule("DD010")
+    assert len(in_train) == 1
+    assert in_train[0].formal_impact is FormalImpact.NONE, (
+        "label noise in train is a quality finding, not a blocked eval"
+    )
+    assert in_train[0].severity is Severity.MEDIUM
+    assert in_train[0].evidence["eval_split_hits"] == []
+
+
+# -------------------------------------------------- DD015: which column lost its values
+def test_dd015_the_column_whose_missing_rate_jumps_is_named_and_sized(tmp_path: Path, run_audit: Any) -> None:
+    """TEST 28 attributes the blank cells somewhere; this says where, and by how much.
+
+    Also the only place the ``min_rate_delta`` knob is shown to be wired: a threshold nobody
+    reads is a threshold nobody can tune.
+    """
+    train = [row(f"r{i:03d}", f"p{i // 8:02d}", index=i) for i in range(40)]
+    for record in train[::3]:
+        record["sex"] = ""
+    test = [row(f"t{i:03d}", f"q{i // 4:02d}", index=40 + i) for i in range(20)]
+
+    root = _root(tmp_path, "miss_shift")
+    write_rows(root / "train.csv", train, COLUMNS)
+    write_rows(root / "test.csv", test, COLUMNS)
+
+    result = run_audit(root)
+    shifts = result.by_rule("DD015")
+    assert len(shifts) == 1
+    shift = shifts[0]
+    assert shift.status is AuditStatus.WARNING
+    assert shift.severity is Severity.MEDIUM, "a third of a column missing is past the 0.3 floor"
+    assert shift.formal_impact is FormalImpact.POTENTIAL
+    assert shift.evidence_type is EvidenceType.STATISTICAL, "a rate is a statistic, not a measurement of a fault"
+    assert shift.location.columns == ["sex"]
+    assert shift.evidence["threshold"] == 0.1
+    moved = shift.evidence["columns"][0]
+    assert moved["column"] == "sex"
+    assert abs(moved["train_missing_rate"] - 0.35) < 1e-4
+    assert abs(moved["delta"] + 0.35) < 1e-4
+
+    quieter = _root(
+        tmp_path,
+        "miss_shift_quiet",
+        TABULAR_CONFIG.replace("policies: {}", "policies:\n  missingness_shift:\n    min_rate_delta: 0.4\n"),
+    )
+    write_rows(quieter / "train.csv", train, COLUMNS)
+    write_rows(quieter / "test.csv", test, COLUMNS)
+
+    assert run_audit(quieter).by_rule("DD015") == []
+
+
+def test_dd015_is_unsupported_on_images_rather_than_silently_absent(images: Any, run_audit: Any) -> None:
+    root = images(
+        "miss_images", train={"bruise": _tone_tiles(701, 6, "dark")}, test={"bruise": _tone_tiles(801, 6, "dark")}
+    )
+
+    outcome = run_audit(root).rule("DD015")
+
+    assert outcome is not None and outcome.status is AuditStatus.UNSUPPORTED
+    assert "table" in (outcome.skip_reason or "")
+
+
+# -------------------------------------------------- DD021: refusing a dataset type
+def test_dd021_declines_an_image_dataset_and_does_not_call_it_safe(images: Any, run_audit: Any) -> None:
+    """A rule with no columns to scan is UNSUPPORTED, which is not a clean bill of health.
+
+    The assertion lives next to DD017's for the same reason the spec puts them in different
+    categories: a shared reason for abstaining must not become a shared verdict.
+    """
+    root = images(
+        "pii_images", train={"bruise": _tone_tiles(901, 6, "dark")}, test={"bruise": _tone_tiles(1001, 6, "dark")}
+    )
+
+    outcome = run_audit(root).rule("DD021")
+
+    assert outcome is not None and outcome.status is AuditStatus.UNSUPPORTED
+    assert outcome.skip_reason == "PII scanning covers table columns"
+    assert outcome.suppression_reason is None, "abstaining is not suppressing"

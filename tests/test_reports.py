@@ -24,7 +24,7 @@ from conftest import TABULAR_CONFIG, row, write_rows
 import dataset_doctor.cli as cli_module
 from dataset_doctor import audit_dataset
 from dataset_doctor.cli import main
-from dataset_doctor.models import SCHEMA_VERSION, AuditReport, Severity
+from dataset_doctor.models import SCHEMA_VERSION, AuditReport, AuditStatus, EvalSafety, FormalImpact, Severity
 from dataset_doctor.reports import write_reports
 
 COLUMNS = ["record_id", "patient_id", "age", "sex", "bmi", "value", "target"]
@@ -297,8 +297,11 @@ def test_a_leaky_run_is_reported_as_invalid_and_exposes_the_evidence(leaky: Path
     result = audit_dataset(leaky)
     duplicates = result.by_rule("DD003")
 
-    assert result.report.eval_safety.value == "FORMAL_EVAL_INVALID"
-    assert duplicates and duplicates[0].status.value in ("FAIL", "WARNING")
+    assert result.report.eval_safety is EvalSafety.FORMAL_EVAL_INVALID
+    assert duplicates and duplicates[0].status is AuditStatus.FAIL, (
+        "a cross-split exact duplicate is a measured fault, not a warning to weigh"
+    )
+    assert duplicates[0].formal_impact is FormalImpact.BLOCKING
     assert duplicates[0].affected_count >= 8
     assert duplicates[0].evidence, "a verdict with no evidence behind it is a guess"
     assert any(record in str(duplicates[0].location.model_dump()) for record in ("r000", "p00")), (
