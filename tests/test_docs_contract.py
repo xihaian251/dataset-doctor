@@ -27,7 +27,9 @@ from pathlib import Path
 
 import pytest
 
+from dataset_doctor import audit_dataset, load_config
 from dataset_doctor.audit import DETECTORS
+from dataset_doctor.models import EvidenceType
 from dataset_doctor.rules import REGISTRY, V01_RULES
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -168,6 +170,60 @@ def test_readmes_leakage_table_calls_each_rule_the_evidence_type_it_documents() 
 
 
 # ------------------------------------------------------------------- checked-in measurement
+HEURISTIC_RULES = [rule_id for rule_id in RULE_IDS if REGISTRY[rule_id].evidence_type is EvidenceType.HEURISTIC]
+
+
+@pytest.mark.parametrize("rule_id", HEURISTIC_RULES)
+def test_a_heuristic_rule_states_its_confidence_and_a_benign_explanation(rule_id: str) -> None:
+    """A judgement has to say how much of it is judgement, and what would make it wrong.
+
+    "Heuristic rules carry LOW confidence" is the easy version of this rule and it is false:
+    DD004 caps at `MEDIUM` because a pHash collision is arithmetic about pixels even when the
+    threshold is a judgement. What is not optional is leaving the confidence undocumented, or
+    leaving out the benign explanation that lets a reader dismiss the finding.
+    """
+    rule = REGISTRY[rule_id]
+    assert rule.false_positive_notes.strip(), f"{rule_id} is a judgement and records no benign explanation"
+    assert re.search(r"[Cc]onfidence.{0,40}`(?:LOW|MEDIUM|HIGH)`", _text(rule_id)), (
+        f"{rule_id} never states its confidence in its own document"
+    )
+
+
+def _unresolved(fixture: str, mode: str) -> set[str]:
+    """Rule ids that reach no verdict on a committed fixture in one fingerprint mode."""
+    path = EXAMPLES / fixture
+    coverage = audit_dataset(path, config=load_config(path, fingerprint=mode)).report.coverage
+    return set(coverage["rules_not_run"]) | set(coverage["rules_inconclusive"])
+
+
+@pytest.mark.skipif(not importlib.util.find_spec("imagehash"), reason="DD004 needs the `image` extra")
+def test_the_fingerprint_modes_cost_the_coverage_the_readme_says() -> None:
+    """README names the rules that `metadata` gives up. It is a set, so it can be checked as one.
+
+    This is the one place the project's honesty claim is testable as a *negative*: a mode that
+    cannot measure must widen the gap list, never narrow the verdict. An implementation that
+    quietly reported `PASS` for a rule it stopped measuring would show up here as a shrinking
+    set, which is the assertion below cannot express.
+    """
+    images = _unresolved("leaky_image_dataset", "full")
+    tables = _unresolved("leaky_patient_dataset", "full")
+
+    lost_on_images = _unresolved("leaky_image_dataset", "metadata") - images
+    assert lost_on_images == {"DD003", "DD004", "DD009", "DD016", "DD017"}, (
+        f"`metadata` now costs {sorted(lost_on_images)} on images; README lists the five by name"
+    )
+    assert _unresolved("leaky_patient_dataset", "metadata") - tables == {"DD003"}
+    assert _unresolved("leaky_image_dataset", "sampled") - images == set()
+    assert _unresolved("leaky_patient_dataset", "sampled") - tables == set()
+
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    section = readme.split("## Dataset Fingerprint", 1)[1].split("\n## ", 1)[0]
+    named = set(re.findall(r"\bDD\d{3}\b", section))
+    assert named == lost_on_images, (
+        f"README's fingerprint section names {sorted(named)}, measured gap is {sorted(lost_on_images)}"
+    )
+
+
 def _build_module() -> object:
     spec = importlib.util.spec_from_file_location("examples_build", EXAMPLES / "build.py")
     assert spec and spec.loader
@@ -221,11 +277,16 @@ def _canonical(text: str) -> list[str]:
     return [line for line in lines if line]
 
 
-def _readme_claims(heading: str) -> list[str]:
-    """Normalised lines of every measured-output block under one README section."""
+def _readme_block(language: str, heading: str) -> list[str]:
+    """Every fenced block of one language under one README section, as normalised lines."""
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     section = readme.split(f"## {heading}", 1)[1].split("\n## ", 1)[0]
-    return [line for block in re.findall(r"```text\n(.*?)```", section, re.S) for line in _canonical(block)]
+    return [line for block in re.findall(rf"```{language}\n(.*?)```", section, re.S) for line in _canonical(block)]
+
+
+def _readme_claims(heading: str) -> list[str]:
+    """Normalised lines of every measured-output block under one README section."""
+    return _readme_block("text", heading)
 
 
 def _run_cli(cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -246,7 +307,12 @@ def _run_cli(cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
 
 
 def test_readmes_demo_output_is_what_the_demo_command_actually_prints(tmp_path: Path) -> None:
-    """The README sells `dataset-doctor demo` with "Real output, verbatim". That is a test."""
+    """The README sells `dataset-doctor demo` with "Real output, verbatim". That is a test.
+
+    The same run also has to write the `report.md` whose finding the README quotes further
+    down, so both quotations are checked against one subprocess: the summary box the
+    terminal shows, and the reviewable Markdown a reader will paste into a pull request.
+    """
     claims = _readme_claims("Demo")
     assert claims, "the README no longer quotes the demo output; this test should be deleted with the claim"
 
@@ -254,6 +320,13 @@ def test_readmes_demo_output_is_what_the_demo_command_actually_prints(tmp_path: 
     printed = " ".join(_canonical(completed.stdout))
     missing = [line for line in claims if line not in printed]
     assert not missing, "README quotes output the tool no longer produces:\n" + "\n".join(missing)
+
+    report = tmp_path / "demo-datasets" / "reports" / "leaky_tabular" / "report.md"
+    assert report.is_file(), "the demo stopped writing the report the README quotes from"
+    rendered = re.sub(r"\s+", " ", report.read_text(encoding="utf-8"))
+    quoted = [line.rstrip().removesuffix("...").strip() for line in _readme_block("markdown", "Quick Start")]
+    missing = [line for line in quoted if line not in rendered]
+    assert not missing, "README's sample finding is no longer what report.md writes:\n" + "\n".join(missing)
 
 
 def test_readmes_distribution_shift_example_still_measures_that_way(tmp_path: Path) -> None:
