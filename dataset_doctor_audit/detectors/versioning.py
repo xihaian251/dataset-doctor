@@ -1,7 +1,7 @@
 """DD018 version drift and DD019 split drift, derived from a snapshot diff.
 
 These rules only exist when the user supplies a baseline (`audit --baseline ds_x` or
-`dataset-doctor diff`). The distinction that matters: additions and removals are
+`dataset-doctor-audit diff`). The distinction that matters: additions and removals are
 routine maintenance, while a sample that *moved into the test split* is the classic
 way for a published number to improve without the model improving (spec sections
 64, 130).
@@ -64,7 +64,7 @@ def detect_version_drift(ctx: AuditContext) -> list[Any]:
                 },
                 recommended_action=(
                     "Re-create the baseline with the same fingerprint mode and config, or diff two snapshots "
-                    "taken with `dataset-doctor snapshot`."
+                    "taken with `dataset-doctor-audit snapshot`."
                 ),
                 metadata={"scope": "dataset"},
             )
@@ -124,7 +124,7 @@ def detect_version_drift(ctx: AuditContext) -> list[Any]:
                 "run has no row path or id column to resolve them against.",
                 "Finding-level change tracking (`finding_changes`) is empty during an audit, because the "
                 "diff is computed before this run's rules have produced findings. Compare two audited "
-                "snapshots with `dataset-doctor diff <a.json> <b.json>` for new/resolved findings.",
+                "snapshots with `dataset-doctor-audit diff <a.json> <b.json>` for new/resolved findings.",
             ],
             recommended_action=(
                 "Record the dataset version next to every published number, then re-run the baseline "

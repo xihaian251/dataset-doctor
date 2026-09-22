@@ -15,9 +15,9 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from dataset_doctor import audit_dataset, load_config
-from dataset_doctor.audit import AuditResult
-from dataset_doctor.models import AuditFinding, AuditStatus, Severity
+from dataset_doctor_audit import audit_dataset, load_config
+from dataset_doctor_audit.audit import AuditResult
+from dataset_doctor_audit.models import AuditFinding, AuditStatus, Severity
 
 TABULAR_CONFIG = """\
 dataset:

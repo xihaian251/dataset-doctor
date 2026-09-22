@@ -139,12 +139,13 @@ def _declare(kind: str, group: list[AuditFinding], root: str) -> RepairStep:
         _ORDER[kind],
         kind,
         "Declare the dataset contract",
-        "Run `dataset-doctor init` and fill in labels.column, groups.columns, temporal.column and the split layout.",
+        "Run `dataset-doctor-audit init` and fill in labels.column, groups.columns, "
+        "temporal.column and the split layout.",
         "Half the rules can only answer INCONCLUSIVE without declared metadata; declaring it "
         "first converts guesses into measurements and costs minutes.",
         [f.finding_id for f in group],
         sorted({f.rule_id for f in group}),
-        f"dataset-doctor init {root}",
+        f"dataset-doctor-audit init {root}",
     )
 
 
@@ -180,7 +181,7 @@ def _deduplicate(kind: str, group: list[AuditFinding], root: str) -> RepairStep:
         "content can land on both sides again.",
         [f.finding_id for f in group],
         sorted({f.rule_id for f in group}),
-        f"dataset-doctor split {root} --dedupe --output {root}-deduped",
+        f"dataset-doctor-audit split {root} --dedupe --output {root}-deduped",
         writes_data=True,
         residual_risk="De-duplicating a benchmark you did not build can change its published metrics.",
     )
@@ -204,7 +205,7 @@ def _resplit(kind: str, group: list[AuditFinding], root: str) -> RepairStep:
         "measurement is computed on the wrong partition until it is fixed.",
         [f.finding_id for f in group],
         sorted({f.rule_id for f in group}),
-        f"dataset-doctor split {root}{flag} --output {root}-resplit",
+        f"dataset-doctor-audit split {root}{flag} --output {root}-resplit",
         writes_data=True,
         residual_risk="A grouped split is coarser: effective sample count drops and class balance may shift.",
     )
@@ -238,7 +239,7 @@ def _recalibrate(kind: str, group: list[AuditFinding], root: str) -> RepairStep:
         "model will be measured on.",
         [f.finding_id for f in group],
         sorted({f.rule_id for f in group}),
-        f"dataset-doctor audit {root} --policy research  # tighten or loosen thresholds deliberately",
+        f"dataset-doctor-audit audit {root} --policy research  # tighten or loosen thresholds deliberately",
     )
 
 
@@ -252,5 +253,6 @@ def _reverify_step(root: str, prior: list[RepairStep]) -> RepairStep:
         "A fix that was never re-measured is a claim, not a result.",
         [],
         ["DD018", "DD019"],
-        f"dataset-doctor audit {root} --save-snapshot fixed && dataset-doctor diff {root} --baseline current",
+        f"dataset-doctor-audit audit {root} --save-snapshot fixed"
+        f" && dataset-doctor-audit diff {root} --baseline current",
     )

@@ -8,7 +8,7 @@
 | Evidence type | `STATISTICAL` |
 | Applies to | tabular (images are [DD017](DD017-image-property-shift.md)) |
 | Requires | at least two non-empty splits; feature columns that survive label/id/split removal |
-| Detector | `dataset_doctor/detectors/distribution.py::detect_feature_shift` |
+| Detector | `dataset_doctor_audit/detectors/distribution.py::detect_feature_shift` |
 
 ## Definition
 

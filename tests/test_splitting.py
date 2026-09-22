@@ -19,9 +19,9 @@ import pandas as pd
 import pytest
 from conftest import TABULAR_CONFIG, row, write_rows
 
-from dataset_doctor import audit_dataset
-from dataset_doctor.errors import SplitError
-from dataset_doctor.splitting import SplitRequest, split_dataset
+from dataset_doctor_audit import audit_dataset
+from dataset_doctor_audit.errors import SplitError
+from dataset_doctor_audit.splitting import SplitRequest, split_dataset
 
 COLUMNS = ["record_id", "patient_id", "age", "sex", "bmi", "value", "target"]
 

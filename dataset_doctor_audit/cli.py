@@ -400,7 +400,7 @@ def split(
     )
     for note in result.notes:
         console.print(f"[dim]- {note}[/dim]")
-    console.print("[dim]Re-audit the result: dataset-doctor audit " + str(result.output) + "[/dim]")
+    console.print("[dim]Re-audit the result: dataset-doctor-audit audit " + str(result.output) + "[/dim]")
 
 
 @app.command()

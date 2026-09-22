@@ -13,8 +13,8 @@ from typing import Any
 
 import pytest
 
-from dataset_doctor import audit_dataset
-from dataset_doctor.models import EvalSafety, FormalImpact
+from dataset_doctor_audit import audit_dataset
+from dataset_doctor_audit.models import EvalSafety, FormalImpact
 
 EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
 

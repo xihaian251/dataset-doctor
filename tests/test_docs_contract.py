@@ -27,10 +27,10 @@ from pathlib import Path
 
 import pytest
 
-from dataset_doctor import audit_dataset, load_config
-from dataset_doctor.audit import DETECTORS
-from dataset_doctor.models import EvidenceType
-from dataset_doctor.rules import REGISTRY, V01_RULES
+from dataset_doctor_audit import audit_dataset, load_config
+from dataset_doctor_audit.audit import DETECTORS
+from dataset_doctor_audit.models import EvidenceType
+from dataset_doctor_audit.rules import REGISTRY, V01_RULES
 
 ROOT = Path(__file__).resolve().parent.parent
 EXAMPLES = ROOT / "examples"
@@ -292,7 +292,7 @@ def _readme_claims(heading: str) -> list[str]:
 def _run_cli(cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
     environment = {"PYTHONPATH": str(ROOT), "PYTHONIOENCODING": "utf-8", "COLUMNS": "240", "FORCE_COLOR": "0"}
     completed = subprocess.run(
-        [sys.executable, "-m", "dataset_doctor.cli", *args],
+        [sys.executable, "-m", "dataset_doctor_audit.cli", *args],
         cwd=str(cwd),
         capture_output=True,
         text=True,
@@ -301,13 +301,13 @@ def _run_cli(cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
         timeout=600,
     )
     assert completed.returncode == 0, (
-        f"`dataset-doctor {' '.join(args)}` exited {completed.returncode}\n{completed.stderr[-2000:]}"
+        f"`dataset-doctor-audit {' '.join(args)}` exited {completed.returncode}\n{completed.stderr[-2000:]}"
     )
     return completed
 
 
 def test_readmes_demo_output_is_what_the_demo_command_actually_prints(tmp_path: Path) -> None:
-    """The README sells `dataset-doctor demo` with "Real output, verbatim". That is a test.
+    """The README sells `dataset-doctor-audit demo` with "Real output, verbatim". That is a test.
 
     The same run also has to write the `report.md` whose finding the README quotes further
     down, so both quotations are checked against one subprocess: the summary box the
@@ -332,7 +332,7 @@ def test_readmes_demo_output_is_what_the_demo_command_actually_prints(tmp_path: 
 def test_readmes_distribution_shift_example_still_measures_that_way(tmp_path: Path) -> None:
     """The README's sharpest claim is a *negative* one, so it needs a guard of its own.
 
-    "`RISKY`, not `INVALID`, and `dataset-doctor audit` exits 0 on it" is the sentence that
+    "`RISKY`, not `INVALID`, and `dataset-doctor-audit audit` exits 0 on it" is the sentence that
     separates this tool from a data-quality score. If DD012 or DD013 ever escalated a pure
     shift into a blocked evaluation, the exit code and the verdict line here would both move
     before the prose looked wrong to a reader.

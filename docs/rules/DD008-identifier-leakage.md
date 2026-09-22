@@ -8,7 +8,7 @@
 | Evidence type | `HEURISTIC` |
 | Applies to | tabular |
 | Requires | readable table data (no label needed) |
-| Detector | `dataset_doctor/detectors/leakage.py::detect_identifier_leakage` |
+| Detector | `dataset_doctor_audit/detectors/leakage.py::detect_identifier_leakage` |
 
 ## Definition
 
@@ -71,13 +71,13 @@ something is wrong, not proof that the label is recoverable from it.
 
 ## Examples
 
-The demo fixture ships with `id_columns: [record_id]`, and `dataset_doctor/demo.py` states
+The demo fixture ships with `id_columns: [record_id]`, and `dataset_doctor_audit/demo.py` states
 that this is why DD008 stays quiet there - a declared key is treated as identity. Remove that
 one line and the same data produces a finding, measured from a run of this exact setup:
 
 ```bash
 cp -r <demo>/leaky_tabular undeclared_id && sed -i '/id_columns/d' undeclared_id/dataset-doctor.yaml
-dataset-doctor audit ./undeclared_id
+dataset-doctor-audit audit ./undeclared_id
 ```
 
 ```text
@@ -102,7 +102,7 @@ check rather than by a fixture.
 Either the column is identity, or it is a feature.
 
 - If it is identity: declare it. `id_columns: [record_id]` in `dataset-doctor.yaml` is the
-  durable form; `dataset-doctor audit --id-column record_id` applies the same declaration to
+  durable form; `dataset-doctor-audit audit --id-column record_id` applies the same declaration to
   one run without writing any file. Either way the finding goes away because the tool stops
   treating it as signal - the data is untouched.
 - If it might be a feature: check whether its value was knowable before the outcome, and

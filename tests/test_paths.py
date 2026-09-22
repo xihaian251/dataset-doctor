@@ -20,8 +20,8 @@ from typing import Any
 import pytest
 from conftest import TABULAR_CONFIG, row, write_rows
 
-from dataset_doctor import audit_dataset
-from dataset_doctor.models import DatasetType
+from dataset_doctor_audit import audit_dataset
+from dataset_doctor_audit.models import DatasetType
 
 COLUMNS = ["record_id", "patient_id", "age", "sex", "bmi", "value", "target"]
 
@@ -94,7 +94,7 @@ def test_test25_a_dataset_under_a_chinese_path_audits_and_reports(tmp_path: Path
     outdir = tmp_path / "输出报告"
 
     result = audit_dataset(root)
-    from dataset_doctor.reports import write_reports
+    from dataset_doctor_audit.reports import write_reports
 
     written = write_reports(result.report, outdir)
 
@@ -190,7 +190,7 @@ def test_the_installed_command_line_entry_point_survives_a_subprocess_with_that_
     command = [
         sys.executable,
         "-m",
-        "dataset_doctor.cli",
+        "dataset_doctor_audit.cli",
         "audit",
         str(root),
         "--output",

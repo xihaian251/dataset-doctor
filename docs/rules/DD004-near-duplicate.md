@@ -8,7 +8,7 @@
 | Evidence type | `HEURISTIC` |
 | Applies to | image |
 | Requires | `imagehash` (the `image` extra), decodable images, `--fingerprint full` |
-| Detector | `dataset_doctor/detectors/duplicates.py::detect_near_duplicates` |
+| Detector | `dataset_doctor_audit/detectors/duplicates.py::detect_near_duplicates` |
 
 ## Definition
 

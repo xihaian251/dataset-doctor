@@ -8,7 +8,7 @@
 | Evidence type | `DETERMINISTIC` |
 | Applies to | tabular |
 | Requires | `temporal.column`, at least two splits, `temporal.train_before_test` |
-| Detector | `dataset_doctor/detectors/leakage.py::detect_temporal_leakage` |
+| Detector | `dataset_doctor_audit/detectors/leakage.py::detect_temporal_leakage` |
 
 ## Definition
 

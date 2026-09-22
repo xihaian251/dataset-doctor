@@ -8,7 +8,7 @@
 | Evidence type | `DETERMINISTIC` |
 | Applies to | tabular, image |
 | Requires | declared or discovered splits |
-| Detector | `dataset_doctor/detectors/structural.py::detect_split_integrity` |
+| Detector | `dataset_doctor_audit/detectors/structural.py::detect_split_integrity` |
 
 ## Definition
 

@@ -17,7 +17,7 @@ import pytest
 
 Image = pytest.importorskip("PIL.Image")
 
-from dataset_doctor import audit_dataset  # noqa: E402
+from dataset_doctor_audit import audit_dataset  # noqa: E402
 
 FILES = int(os.environ.get("DATASET_DOCTOR_SCALE_FILES", "50000"))
 ENABLED = os.environ.get("DATASET_DOCTOR_SCALE") == "1"

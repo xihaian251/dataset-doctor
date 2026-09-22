@@ -22,9 +22,9 @@ from typing import Any
 import pytest
 from conftest import TABULAR_COLUMNS, row, write_rows
 
-from dataset_doctor import audit_dataset
+from dataset_doctor_audit import audit_dataset
 
-PACKAGE = Path(__file__).resolve().parents[1] / "dataset_doctor"
+PACKAGE = Path(__file__).resolve().parents[1] / "dataset_doctor_audit"
 
 #: Anything that could move bytes off the machine, train a model, or call a hosted model.
 FORBIDDEN_ROOTS = {
@@ -208,7 +208,7 @@ def test_test23_an_audit_with_no_gpu_and_a_stripped_environment_matches_the_loca
     command = [
         sys.executable,
         "-m",
-        "dataset_doctor.cli",
+        "dataset_doctor_audit.cli",
         "audit",
         str(leaky_root),
         "--output",
@@ -231,7 +231,7 @@ def test_test23_the_child_process_imports_no_gpu_framework(tmp_path: Path, leaky
     script = tmp_path / "probe.py"
     script.write_text(
         "import sys, json\n"
-        "from dataset_doctor import audit_dataset\n"
+        "from dataset_doctor_audit import audit_dataset\n"
         "result = audit_dataset(sys.argv[1])\n"
         f"heavy = {frozenset(GPU_OR_LLM_ROOTS)!r}\n"
         "loaded = sorted(m for m in sys.modules if m.split('.')[0] in heavy)\n"

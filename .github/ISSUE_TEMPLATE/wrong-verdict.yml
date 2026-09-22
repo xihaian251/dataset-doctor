@@ -12,7 +12,7 @@ body:
     id: rule
     attributes:
       label: Rule id
-      description: e.g. DD005, or `dataset-doctor show --rule DD005` for what the rule claims to do
+      description: e.g. DD005, or `dataset-doctor-audit show --rule DD005` for what the rule claims to do
       placeholder: DD___
     validations:
       required: true

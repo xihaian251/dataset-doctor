@@ -21,11 +21,11 @@ from typing import Any
 import pytest
 from conftest import TABULAR_CONFIG, row, write_rows
 
-import dataset_doctor.cli as cli_module
-from dataset_doctor import audit_dataset
-from dataset_doctor.cli import main
-from dataset_doctor.models import SCHEMA_VERSION, AuditReport, AuditStatus, EvalSafety, FormalImpact, Severity
-from dataset_doctor.reports import write_reports
+import dataset_doctor_audit.cli as cli_module
+from dataset_doctor_audit import audit_dataset
+from dataset_doctor_audit.cli import main
+from dataset_doctor_audit.models import SCHEMA_VERSION, AuditReport, AuditStatus, EvalSafety, FormalImpact, Severity
+from dataset_doctor_audit.reports import write_reports
 
 COLUMNS = ["record_id", "patient_id", "age", "sex", "bmi", "value", "target"]
 
@@ -95,7 +95,7 @@ def leaky(tmp_path: Path) -> Path:
 def _cli(*argv: str) -> int:
     """Run the console entry point the way a shell does, and return its exit code."""
     argv_backup = sys.argv
-    sys.argv = ["dataset-doctor", *[str(a) for a in argv]]
+    sys.argv = ["dataset-doctor-audit", *[str(a) for a in argv]]
     try:
         with pytest.raises(SystemExit) as exit_info:
             main()

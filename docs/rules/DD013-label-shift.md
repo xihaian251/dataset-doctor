@@ -8,7 +8,7 @@
 | Evidence type | `STATISTICAL` |
 | Applies to | tabular, image |
 | Requires | at least two non-empty splits, labels present in both compared splits |
-| Detector | `dataset_doctor/detectors/distribution.py::detect_label_shift` |
+| Detector | `dataset_doctor_audit/detectors/distribution.py::detect_label_shift` |
 
 ## Definition
 

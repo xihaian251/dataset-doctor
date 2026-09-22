@@ -13,15 +13,15 @@ threshold, a rule id, or a claim in the README.
 
 | Area | State |
 | --- | --- |
-| Package | `dataset-doctor-audit` 0.1.0, importable `dataset_doctor`, CLI `dataset-doctor` |
+| Package | `dataset-doctor-audit` 0.1.0, importable `dataset_doctor_audit`, CLI `dataset-doctor-audit` |
 | Rules | DD001-DD021 implemented and registered (`rules.py`), 21/21 have `docs/rules/*.md` |
 | Modalities | Tabular (CSV/TSV/Parquet/Excel incl. multi-sheet) + image folders |
 | Reports | `report.json` (frozen field set), `report.md`, self-contained `report.html` |
 | Commands | `audit`, `scan`, `init`, `split`, `snapshot`, `diff`, `fingerprint`, `report`, `rules`, `show`, `demo` |
 | Exit codes | 0 ok · 1 findings gate · 2 usage/input error · 3 internal error · 130 on Ctrl+C |
 | Fixtures | 13 in `examples/`, each with `PLANTED_FAULTS.md`; `examples/RESULTS.md` regenerates via `python examples/build.py` |
-| Tests | 153 test functions / 242 collected items: 212 passed, 30 skipped in 56 s (2026-09-22, Python 3.13.1). Every skip is intentional: the opt-in scale test, plus parametrised documentation checks for rules that make no V0.1 or modality claim |
-| Gates (2026-09-22) | `ruff format --check .` "103 files already formatted" · `ruff check .` "All checks passed!" · `mypy dataset_doctor` "no issues found in 32 source files" · `pytest` green with the scale test skipped |
+| Tests | 154 test functions / 243 collected items: 213 passed, 30 skipped in 61 s (2026-09-22, Python 3.13.1). Every skip is intentional: the opt-in scale test, plus parametrised documentation checks for rules that make no V0.1 or modality claim |
+| Gates (2026-09-22) | `ruff format --check .` "103 files already formatted" · `ruff check .` "All checks passed!" · `mypy dataset_doctor_audit` "no issues found in 32 source files" · `pytest` green with the scale test skipped |
 | Release engineering | `.github/workflows/ci.yml`, issue/PR templates and `docs/RELEASE_CHECKLIST.md` are written but **unexecuted** - there is no remote, so CI has never been green anywhere except locally |
 | Not done | PyPI upload (no `[project.urls]` until a real repository exists), hosting, tag |
 
@@ -78,7 +78,7 @@ Each entry: what was ambiguous, the reading chosen, why, and how much it matters
 | A13 | DD018's `finding_changes` during an audit | Diff runs before this run's findings exist ⇒ report it **empty** with a limitation, and refuse to compute new/resolved when a side has no `findings_digest` | **High** - the old behaviour claimed the baseline's problems were "resolved" |
 | A14 | `Adapter.relative()` used unresolved roots | Fixed to resolve both sides (`base.py`), so `./data` and `/abs/data` produce identical sample ids | **High** for DD018/DD019: metadata-mode hashes used to depend on how the command was typed |
 | A15 | Should reports carry absolute paths? | Only the diff's `right` label (a resolved path); every reported data path is relative | Medium - a report is shared, a machine path is not; hashes stay stable |
-| A16 | `dataset-doctor` is already taken on PyPI (MIT 1.0.1, auto-cleaning tool) | Distribution renamed **`dataset-doctor-audit`**; CLI and brand stay; README warns; import name still collides (do not install both) | **High** for adoption - the spec's headline `pip install dataset-doctor` is not this tool |
+| A16 | `dataset-doctor` is already taken on PyPI (MIT 1.0.1, auto-cleaning tool); its wheel ships import package `dataset_doctor` and console script `dataset-doctor` | **All three namespaces suffixed** (2026-09-22 ADR 0006 amendment): distribution `dataset-doctor-audit`, import `dataset_doctor_audit`, CLI `dataset-doctor-audit`. Brand artefacts keep the short name (`dataset-doctor.yaml`, `.dataset-doctor/`, `dataset-doctor-report/`). Installing both projects is now cosmetic, not destructive | **High** for adoption - the spec's headline `pip install dataset-doctor` is not this tool, and our command is six characters longer |
 | A17 | DD021 scanning several splits with the same column | `seen` set ⇒ one finding per `(column, pattern)`, attributed to the first split alphabetically; ratio is per split | Medium - `4 of 180` is not `4 of 240` |
 | A18 | Near-duplicate Hamming threshold is dataset-dependent (spec section 153) | Kept configurable at 6, published as a Limitation verbatim | Low |
 | A19 | Zero-variance columns in shift metrics \|SMD\| | Emitted as `inf` / `null` rather than clamped, and DD017's doc shows the measured pair | Medium - a clamped 0.0 would hide a degenerate column |
@@ -211,9 +211,9 @@ the column then reads as 2-of-2. Fillers in PII fixtures must be real strings (`
 
 | What | Number | Source |
 | --- | --- | --- |
-| `dataset-doctor demo` leaky_tabular | 316 findings, `FORMAL_EVAL_INVALID` (DD003 12 · DD005 66 · DD007 316) | demo run log, 2026-09-21 |
-| `dataset-doctor demo` clean_tabular | 300 findings, `SAFE` - the false-positive control | demo run log, 2026-09-21 |
-| `dataset-doctor demo` leaky_images | 146 findings, `INVALID` | demo run log, 2026-09-21 |
+| `dataset-doctor-audit demo` leaky_tabular | 316 findings, `FORMAL_EVAL_INVALID` (DD003 12 · DD005 66 · DD007 316) | demo run log, 2026-09-21 |
+| `dataset-doctor-audit demo` clean_tabular | 300 findings, `SAFE` - the false-positive control | demo run log, 2026-09-21 |
+| `dataset-doctor-audit demo` leaky_images | 146 findings, `INVALID` | demo run log, 2026-09-21 |
 | `examples/` fixtures (13, incl. 6 `unsafe_*`) | per-fixture verdicts and counts | `examples/RESULTS.md`, regenerate with `python examples/build.py --audit` |
 | Single audit wall time (fixture-scale) | 1 883 ms | audit run log, 2026-09-21 |
 | Scale: 48 000 image files | cold 315.0 s / warm 320.6 s, peak RSS 344 MB | `tests/test_scale.py` output (TEST 20: 1 passed, 333.33 s total) |

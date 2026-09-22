@@ -8,7 +8,7 @@
 | Evidence type | `DETERMINISTIC` |
 | Applies to | tabular, image |
 | Requires | `groups.columns` or `groups.entity_column`, and at least two splits |
-| Detector | `dataset_doctor/detectors/leakage.py::detect_group_leakage` |
+| Detector | `dataset_doctor_audit/detectors/leakage.py::detect_group_leakage` |
 
 ## Definition
 
@@ -82,7 +82,7 @@ impact are identical; rename the split to `test` if you want the ranking to say 
 
 ## Examples
 
-Measured from `dataset-doctor demo`:
+Measured from `dataset-doctor-audit demo`:
 
 ```text
 CRITICAL DD005-0001 Entity leakage on 'patient_id': test / train (66 samples, test)
@@ -106,7 +106,7 @@ and `unsafe_group_leakage` (270 samples) is the isolation case: shared patients 
 Re-split with the entity as the unit, into a **new** directory:
 
 ```bash
-dataset-doctor split ./cohort.csv --group-by patient_id --output ./cohort_grouped
+dataset-doctor-audit split ./cohort.csv --group-by patient_id --output ./cohort_grouped
 ```
 
 The command refuses to overwrite a non-empty target, records the seed and the assignment

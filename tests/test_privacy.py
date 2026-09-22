@@ -26,8 +26,8 @@ from typing import Any
 import pytest
 from conftest import TABULAR_CONFIG, row, write_rows
 
-from dataset_doctor import audit_dataset
-from dataset_doctor.reports import build_repair_plan, json_payload, render_html, render_markdown
+from dataset_doctor_audit import audit_dataset
+from dataset_doctor_audit.reports import build_repair_plan, json_payload, render_html, render_markdown
 
 EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
 pytestmark = pytest.mark.skipif(not EXAMPLES.is_dir(), reason="example fixtures are not present")

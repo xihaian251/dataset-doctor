@@ -8,7 +8,7 @@
 | Evidence type | `STATISTICAL` (confidence `MEDIUM`) |
 | Applies to | image |
 | Requires | `--fingerprint full` (or `sampled`) and ≥ 5 decoded images per split per property |
-| Detector | `dataset_doctor/detectors/distribution.py::detect_image_property_shift` |
+| Detector | `dataset_doctor_audit/detectors/distribution.py::detect_image_property_shift` |
 
 ## Definition
 

@@ -1,6 +1,6 @@
 """The packaging contract a clone depends on.
 
-`dataset_doctor/reports/` was silently absent from the first commit because an unanchored
+`dataset_doctor_audit/reports/` was silently absent from the first commit because an unanchored
 `reports/` line in `.gitignore` matched the source package as well as the output directory,
 and `cli.py` imports it. Nothing in the test suite noticed, because the tests run against a
 working tree rather than against what a clone would receive. These checks close that hole:
@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parent.parent
-PACKAGE = REPO / "dataset_doctor"
+PACKAGE = REPO / "dataset_doctor_audit"
 
 
 def _pyproject() -> dict:
@@ -55,11 +55,11 @@ def test_every_source_module_of_the_package_is_visible_to_git() -> None:
 
     assert missing == []
     # The regression this test exists for: the report writers are imports, not artefacts.
-    assert "dataset_doctor/reports/__init__.py" in tracked
+    assert "dataset_doctor_audit/reports/__init__.py" in tracked
     assert {
-        "dataset_doctor/reports/html.py",
-        "dataset_doctor/reports/markdown.py",
-        "dataset_doctor/reports/repair.py",
+        "dataset_doctor_audit/reports/html.py",
+        "dataset_doctor_audit/reports/markdown.py",
+        "dataset_doctor_audit/reports/repair.py",
     } <= tracked
 
 
@@ -80,7 +80,7 @@ def test_no_source_module_is_git_ignored() -> None:
 
 def test_the_console_script_target_resolves() -> None:
     """`[project.scripts]` is a claim about importable objects, so test the claim."""
-    entry = _pyproject()["project"]["scripts"]["dataset-doctor"]
+    entry = _pyproject()["project"]["scripts"]["dataset-doctor-audit"]
     module_name, _, attribute = entry.partition(":")
 
     imported = importlib.import_module(module_name)
@@ -96,8 +96,8 @@ def test_the_build_targets_cover_the_files_a_distributor_needs() -> None:
     """
     targets = _pyproject()["tool"]["hatch"]["build"]["targets"]
 
-    assert targets["wheel"]["packages"] == ["dataset_doctor"]
+    assert targets["wheel"]["packages"] == ["dataset_doctor_audit"]
     sdist = set(targets["sdist"]["include"])
-    missing = {"dataset_doctor", "docs", "examples", "tests", "README.md", "CHANGELOG.md", "LICENSE"} - sdist
+    missing = {"dataset_doctor_audit", "docs", "examples", "tests", "README.md", "CHANGELOG.md", "LICENSE"} - sdist
 
     assert missing == set(), f"{sorted(missing)} would be absent from the sdist"

@@ -3,7 +3,7 @@
 
 Every fixture isolates one fault so a reader can tie a finding back to exactly one cause;
 the two mixed fixtures at the end follow the master spec's numbered examples. The builders
-reuse ``dataset_doctor.demo`` primitives on purpose - the shape of a record is the same
+reuse ``dataset_doctor_audit.demo`` primitives on purpose - the shape of a record is the same
 across the whole repository, so a number in a report means the same thing everywhere.
 
     python examples/build.py            # write the fixtures
@@ -28,7 +28,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from dataset_doctor.demo import (
+from dataset_doctor_audit.demo import (
     DEMO_SEED,
     TABULAR_COLUMNS,
     _image_config,
@@ -451,7 +451,7 @@ def build_all(destination: Path, only: str | None = None) -> dict[str, str]:
 
 def record(destination: Path) -> str:
     """Audit every fixture and render the observed verdicts. Numbers here are measured."""
-    from dataset_doctor import audit_dataset
+    from dataset_doctor_audit import audit_dataset
 
     lines = [
         "# What the tool actually said about these fixtures",

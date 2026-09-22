@@ -12,10 +12,10 @@ Run from a clean checkout (`.venv` recreated, not reused):
 python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 ruff format --check . && ruff check .
-mypy dataset_doctor
+mypy dataset_doctor_audit
 PYTHONPATH=. pytest -rA
 python -m build                                        # wheel + sdist into dist/
-python -m pip install dist/*.whl && cd somewhere-else && dataset-doctor audit <checkout>/examples/safe_tabular --ci
+python -m pip install dist/*.whl && cd somewhere-else && dataset-doctor-audit audit <checkout>/examples/safe_tabular --ci
 ```
 
 Then record what was actually measured, in this order:
@@ -31,15 +31,17 @@ Then record what was actually measured, in this order:
 ## 2. Package hygiene
 
 - [ ] `dist/` contains exactly one wheel and one sdist for this version
-- [ ] `unzip -l dist/*.whl` lists `dataset_doctor/reports/` (a `.gitignore` that matched that
+- [ ] `unzip -l dist/*.whl` lists `dataset_doctor_audit/reports/` (a `.gitignore` that matched that
       source directory once left it out of the wheel - `tests/test_packaging.py` now catches it)
 - [ ] `tar tzf dist/*.tar.gz` includes `LICENSE`, `README.md`, `docs/`, `examples/`, `tests/`, `.github/`.
       Check it rather than assuming: an sdist ships only what the build backend's selectors pick
       up, and `.github/` in particular is not a package directory.
 - [ ] No scratch, cache, snapshot, `.dataset-doctor/` or report directory in either archive
-- [ ] `dataset-doctor-audit` is the distribution name and `dataset-doctor` the console script;
-      README's name-collision notice still describes the other package accurately (check the
-      index before every release, because that is a fact about someone else's upload)
+- [ ] All three namespaces still carry the suffix - distribution `dataset-doctor-audit`, import
+      package `dataset_doctor_audit`, console script `dataset-doctor-audit` - and no brand-level
+      artefact does (`dataset-doctor.yaml`, `.dataset-doctor/`, `dataset-doctor-report/`). The
+      README's name-collision notice describes the *other* project, so re-check the index before
+      every release; that is a fact about someone else's upload, not about this repository
 
 ## 3. Decisions that must be made, not assumed
 

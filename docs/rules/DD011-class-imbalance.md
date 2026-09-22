@@ -8,7 +8,7 @@
 | Evidence type | `STATISTICAL` |
 | Applies to | tabular, image |
 | Requires | at least one discovered label |
-| Detector | `dataset_doctor/detectors/distribution.py::detect_class_imbalance` |
+| Detector | `dataset_doctor_audit/detectors/distribution.py::detect_class_imbalance` |
 
 ## Definition
 

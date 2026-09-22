@@ -8,7 +8,7 @@
 | Evidence type | `DETERMINISTIC` |
 | Applies to | tabular, image |
 | Requires | nothing (always runs) |
-| Detector | `dataset_doctor/detectors/structural.py::detect_identity` |
+| Detector | `dataset_doctor_audit/detectors/structural.py::detect_identity` |
 
 ## Definition
 
@@ -33,7 +33,7 @@ this inventory, so "5 rules skipped on 316 samples" means something.
 
 ## Detection
 
-No detection - assembly. `dataset_doctor.manifest` builds one `SampleRecord` per sample
+No detection - assembly. `dataset_doctor_audit.manifest` builds one `SampleRecord` per sample
 (relative path, size, content hash, split, label, perceptual hash, metadata) and the
 identity summarises it.
 
@@ -56,7 +56,7 @@ changes which other rules can run, so it must be visible in the same place.
 None by construction - DD001 asserts nothing about quality and has `FormalImpact.NONE`.
 It can be *wrong* rather than noisy, though, in one way worth naming: if the config
 declares the wrong layout, the identity is internally consistent and still describes the
-wrong dataset. `dataset-doctor scan` exists for the five seconds of checking that the
+wrong dataset. `dataset-doctor-audit scan` exists for the five seconds of checking that the
 inventory matches your expectation, before you read any verdict.
 
 ## Severity
@@ -67,7 +67,7 @@ reads "1 INFO" rather than "0 findings".
 
 ## Examples
 
-From `dataset-doctor demo` (measured, `leaky_tabular`):
+From `dataset-doctor-audit demo` (measured, `leaky_tabular`):
 
 ```text
 | FORMAL_EVAL_INVALID  316 samples / 21 rules |
@@ -89,7 +89,7 @@ and 1 INFO finding - that INFO finding is DD001.
 ## Remediation
 
 Nothing to fix. What to *do*: commit `dataset-doctor.yaml` and the report next to the
-experiment that used it. A snapshot (`dataset-doctor snapshot ./data --name v3`) makes
+experiment that used it. A snapshot (`dataset-doctor-audit snapshot ./data --name v3`) makes
 the identity comparable across runs, which is what DD018 and DD019 need to exist.
 
 ---

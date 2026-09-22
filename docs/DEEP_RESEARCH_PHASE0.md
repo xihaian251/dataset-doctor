@@ -37,7 +37,7 @@ detection, licensing), and which numbers we are allowed to print at all.
   description. Where metadata declares no license, the table says so rather than guessing
   (fiftyone-brain, text-dedup, cleanvision).
 - **Live behaviour checks**: the name-collision investigation went one step further than
-  metadata - the competing `dataset-doctor` package's command surface (`diagnose/report/clean/
+  metadata - the competing `dataset-doctor-audit` package's command surface (`diagnose/report/clean/
   display/show/init-config`) was enumerated, because "what is the *other* tool's contract" is
   exactly the kind of claim a README will be held to.
 - **Literature**: four citation anchors ( Kapoor & Narayanan; Northcutt et al. ×2; Kaufman et
@@ -131,8 +131,10 @@ Two findings were pure research output:
 
 1. **`dataset-doctor` is taken on PyPI** (MIT, 1.0.1, an auto-*cleaning* tool whose `clean`
    command edits data - the exact opposite of our read-only non-negotiable). Distribution name
-   became `dataset-doctor-audit`; brand and CLI unchanged; the import-name collision is
-   documented, not hidden (ADR 0006, register entry A16).
+   became `dataset-doctor-audit`; the brand and the config-file names stayed short. On
+   2026-09-22 the wheel was re-inspected and found to ship the import package `dataset_doctor`
+   and the console script `dataset-doctor` as well, so all three of our namespaces now carry the
+   `-audit` suffix (ADR 0006 amendment, register entry A16).
 2. **Apache-2.0 over MIT** because the ecosystem our users arrive from (GX, Evidently, Cleanlab,
    DVC, FiftyOne) is Apache-2.0 and the patent grant matters for a tool that formalises a
    method (A3).

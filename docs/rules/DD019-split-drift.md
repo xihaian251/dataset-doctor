@@ -9,7 +9,7 @@
 | Confidence | `HIGH` - it is a comparison of two measured manifests, not an inference |
 | Applies to | image + tabular |
 | Requires | a baseline: `audit --baseline <name\|path>` |
-| Detector | `dataset_doctor/detectors/versioning.py::detect_version_drift` (sequences 2 and 3) |
+| Detector | `dataset_doctor_audit/detectors/versioning.py::detect_version_drift` (sequences 2 and 3) |
 | In V0.1 rule set | yes |
 
 ## Definition
@@ -74,7 +74,7 @@ rows with `from`, `to`, `sample`, `sample_id`]. Descriptions show the first 10 r
 - **Images need the content digest.** Two identical files in different folders pair by content;
   a re-encoded image does not, so it shows up as an add plus a remove (DD018) and DD019 stays
   silent. That silence is *not* a claim that nothing moved.
-- **`dataset-doctor diff` (snapshot vs snapshot, no audit)** reports the stored ids only - the
+- **`dataset-doctor-audit diff` (snapshot vs snapshot, no audit)** reports the stored ids only - the
   raw `moved_samples` / `relabeled_samples` rows carry hashes and no `sample` key, because
   display resolution needs the audit context that maps ids back to id-column values.
 - The baseline itself is assumed trustworthy. DD019 measures change relative to a snapshot; it
@@ -162,7 +162,7 @@ evaluation.
    as the baseline so future drift is measured against the set you actually evaluate on, and say
    so in the changelog.
 3. Keep the split assignment under the same review process as the code:
-   `dataset-doctor audit ./data --save-snapshot v2 --baseline v1 -o report-v2` in CI fails on
+   `dataset-doctor-audit audit ./data --save-snapshot v2 --baseline v1 -o report-v2` in CI fails on
    the drift instead of on a hunch.
 
 `policies.split_drift: {severity: "..."}` retunes the displayed severity and

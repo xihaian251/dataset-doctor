@@ -9,7 +9,7 @@ decisions already taken and the gaps still open.
 ```bash
 python -m venv .venv && source .venv/bin/activate    # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"                              # imagehash + openpyxl + pytest + ruff + mypy
-dataset-doctor demo ./demo-data                      # three generated datasets to point at
+dataset-doctor-audit demo ./demo-data                      # three generated datasets to point at
 PYTHONPATH=. pytest -rA                                  # the scale test skips itself
 ```
 
@@ -21,7 +21,7 @@ product (ADR 0004).
 
 ```bash
 ruff format . && ruff check .           # CI runs `ruff format --check .`, so format before you push
-mypy dataset_doctor
+mypy dataset_doctor_audit
 PYTHONPATH=. pytest -rA                 # ~1 minute; see the summary-line note below
 python examples/build.py --audit        # regenerate examples/RESULTS.md from a live audit
 ```
@@ -42,14 +42,14 @@ parametrised documentation checks for rules that make no V0.1 or modality claim.
 
 ## Adding or changing a rule
 
-1. Registry entry in `dataset_doctor/rules.py` (`rule_id`, `name`, category, `default_severity`,
+1. Registry entry in `dataset_doctor_audit/rules.py` (`rule_id`, `name`, category, `default_severity`,
    `formal_impact`, `applies_to`, `requires`, `evidence_type`, `doc_path`), the detector tuple in
    `audit.DETECTORS`, and, if the rule is tunable, a `RULE_TO_POLICY` mapping to its
    `policies.<key>` block. `applies_to` is `[tabular, image]` for all 21 rules and decides
    nothing - `requires` is what makes a rule skip a modality or a missing input (`images`,
    `tabular`, `splits`, `label`, `group_columns`, `temporal_column`), so the two must not be
    confused when you read or write either.
-2. Detector in the matching `dataset_doctor/detectors/*.py`. Raise `NotApplicable` (⇒ `NOT_RUN` /
+2. Detector in the matching `dataset_doctor_audit/detectors/*.py`. Raise `NotApplicable` (⇒ `NOT_RUN` /
    `UNSUPPORTED`) or `InsufficientEvidence` (⇒ `INCONCLUSIVE`) when it cannot measure - never
    return an empty list to mean "fine".
 3. Decide and state whether the rule reads `policies.<name>.enabled`; the current split is

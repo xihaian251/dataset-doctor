@@ -131,7 +131,7 @@ class SplitRole(str, Enum):
 
 class BaseModel_(BaseModel):
     # `schema` is a mandated report field name (spec section 12); the shadow warning is
-    # silenced at import time in dataset_doctor/__init__.py rather than renamed.
+    # silenced at import time in dataset_doctor_audit/__init__.py rather than renamed.
     model_config = ConfigDict(extra="forbid", validate_assignment=False, frozen=False)
 
 

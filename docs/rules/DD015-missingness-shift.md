@@ -8,7 +8,7 @@
 | Evidence type | `STATISTICAL` |
 | Applies to | tabular |
 | Requires | at least two non-empty splits |
-| Detector | `dataset_doctor/detectors/distribution.py::detect_missingness_shift` |
+| Detector | `dataset_doctor_audit/detectors/distribution.py::detect_missingness_shift` |
 
 ## Definition
 
@@ -38,7 +38,7 @@ both sides:
 
 `isna()` is the pandas notion of missing, so the tokens that became `NaN` on the way in
 (`""`, `NA`, `null`, ...) count as missing - and a column whose placeholder survived as a string
-does not. That is a loader question, not a statistics question; `dataset-doctor scan` shows the
+does not. That is a loader question, not a statistics question; `dataset-doctor-audit scan` shows the
 dtypes so you can check.
 
 The per-split rates are recorded under dynamically-named keys

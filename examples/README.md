@@ -11,7 +11,7 @@ this was built on - not what the fixtures were designed to trigger.
 ```bash
 python examples/build.py            # (re)create every fixture next to this file
 python examples/build.py --audit    # ...and regenerate RESULTS.md from a live run
-dataset-doctor audit examples/unsafe_group_leakage
+dataset-doctor-audit audit examples/unsafe_group_leakage
 ```
 
 ## The measured point of the collection

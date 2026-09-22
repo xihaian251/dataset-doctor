@@ -12,9 +12,9 @@ from pathlib import Path
 
 import pytest
 
-from dataset_doctor import load_config
-from dataset_doctor.discovery import discover
-from dataset_doctor.models import DatasetType, SplitRole
+from dataset_doctor_audit import load_config
+from dataset_doctor_audit.discovery import discover
+from dataset_doctor_audit.models import DatasetType, SplitRole
 
 HEADER = "record_id,patient_id,age,value,target\n"
 
@@ -195,7 +195,7 @@ def test_type_is_inferred_from_content_and_recorded_as_an_inference(tmp_path: Pa
 
 
 def test_a_missing_path_fails_before_any_caching(tmp_path: Path) -> None:
-    from dataset_doctor.errors import DiscoveryError
+    from dataset_doctor_audit.errors import DiscoveryError
 
     with pytest.raises(DiscoveryError, match="does not exist"):
         discover(tmp_path / "nope", load_config(tmp_path))

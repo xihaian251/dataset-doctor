@@ -136,7 +136,7 @@ def _carry_config(source: Path, output: Path, request: SplitRequest, modality: s
         existing = source / name
         if existing.is_file():
             body = (
-                "# Carried over verbatim by `dataset-doctor split`, so an audit of this directory\n"
+                "# Carried over verbatim by `dataset-doctor-audit split`, so an audit of this directory\n"
                 "# measures the same declared fields as an audit of its source.\n"
                 + existing.read_text(encoding="utf-8")
             )
@@ -145,7 +145,7 @@ def _carry_config(source: Path, output: Path, request: SplitRequest, modality: s
     if modality == "tabular" and not (request.group_by or request.stratify):
         return None  # nothing was known, so there is nothing honest to write
     lines = [
-        "# Synthesised by `dataset-doctor split` from the flags this command was given;",
+        "# Synthesised by `dataset-doctor-audit split` from the flags this command was given;",
         "# the source directory carried no dataset-doctor.yaml.",
         "dataset:",
         f"  type: {'tabular' if modality == 'tabular' else 'image'}",
@@ -569,7 +569,7 @@ def _manifest(
 
     payload: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
-        "tool": {"name": "dataset-doctor", "version": __version__, "command": "split"},
+        "tool": {"name": "dataset-doctor-audit", "version": __version__, "command": "split"},
         "created_at": utcnow().isoformat(),
         "source": str(source),
         "output": str(output),
@@ -594,7 +594,7 @@ def _manifest(
             }
             for target in targets
         ],
-        "reproduce": "dataset-doctor split " + f"{source}{_echo_flags(request)} --output <a new directory>",
+        "reproduce": "dataset-doctor-audit split " + f"{source}{_echo_flags(request)} --output <a new directory>",
     }
     return payload
 

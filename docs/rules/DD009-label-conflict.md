@@ -8,7 +8,7 @@
 | Evidence type | `DETERMINISTIC` |
 | Applies to | tabular, image |
 | Requires | labelled records; for images, content hashing (not `metadata` fingerprint mode) |
-| Detector | `dataset_doctor/detectors/labels.py::detect_label_conflicts` |
+| Detector | `dataset_doctor_audit/detectors/labels.py::detect_label_conflicts` |
 
 ## Definition
 

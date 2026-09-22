@@ -8,7 +8,7 @@
 | Evidence type | `DETERMINISTIC` |
 | Applies to | tabular, image |
 | Requires | content hashes (`--fingerprint full` or `sampled`) |
-| Detector | `dataset_doctor/detectors/duplicates.py::detect_exact_duplicates` |
+| Detector | `dataset_doctor_audit/detectors/duplicates.py::detect_exact_duplicates` |
 
 ## Definition
 
@@ -86,7 +86,7 @@ The identity itself is arithmetic.
 
 ## Examples
 
-From `dataset-doctor demo`, measured:
+From `dataset-doctor-audit demo`, measured:
 
 ```text
 === leaky_tabular ===  316 samples -> FORMAL_EVAL_INVALID
@@ -117,7 +117,7 @@ strength of a hash is not a decision an audit tool gets to make alone.
 If the duplicates are a bookkeeping artefact of the split itself, re-split group-safe:
 
 ```bash
-dataset-doctor split ./data/train.csv --group-by patient_id --output ./data_resplit
+dataset-doctor-audit split ./data/train.csv --group-by patient_id --output ./data_resplit
 ```
 
 `examples/unsafe_duplicate` and `tests/test_splitting.py::test_the_grouped_output_of_the_same_data_passes_the_leakage_rules`

@@ -16,8 +16,8 @@ from typing import Any
 
 from conftest import row, write_rows
 
-from dataset_doctor import audit_dataset, diff_targets, load_config, snapshot_dataset
-from dataset_doctor.models import AuditStatus
+from dataset_doctor_audit import audit_dataset, diff_targets, load_config, snapshot_dataset
+from dataset_doctor_audit.models import AuditStatus
 
 CONFIG = (
     "dataset:\n  type: tabular\nlabels:\n  column: target\ngroups:\n  columns: [patient_id]\n"

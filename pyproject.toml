@@ -5,12 +5,15 @@ requires = ["hatchling>=1.26"]
 build-backend = "hatchling.build"
 
 [project]
-# Distribution name, not the brand name. `dataset-doctor` is already taken on PyPI by an
-# unrelated tabular auto-cleaning package (MIT, 1.0.1, uploaded 2026-03-25,
-# github.com/Mirdula18/dataset-doctor), so `pip install dataset-doctor` must not be our
-# documented entry point. The CLI stays `dataset-doctor`, and docs/COMPETITIVE_ANALYSIS.md
-# records the collision; do not install both projects into one environment - they also share
-# the importable package name `dataset_doctor`.
+# Distribution, import package and console script are all suffixed `-audit` on purpose.
+# `dataset-doctor` is already taken on PyPI by an unrelated tabular auto-cleaning package
+# (MIT, 1.0.1, uploaded 2026-03-25, github.com/Mirdula18/dataset-doctor), which ships the
+# top-level import package `dataset_doctor` and the console script `dataset-doctor`; sharing
+# either of those namespaces means two wheels overwrite each other's files in one
+# site-packages. `dataset-doctor-audit` / `dataset_doctor_audit` collides with nothing.
+# Brand-level artifacts keep the short name: the config file is `dataset-doctor.yaml`, the
+# per-dataset workdir is `.dataset-doctor/`, and the default report dir is
+# `dataset-doctor-report/`. See docs/adr/0006.
 name = "dataset-doctor-audit"
 version = "0.1.0"
 description = "Detect data leakage before it corrupts your ML experiment. Local-first ML dataset reliability and leakage auditing CLI."
@@ -72,16 +75,16 @@ dev = [
 # broken link in everyone's package index. Add it when the repo is real. See PROJECT_STATE.md.
 
 [project.scripts]
-dataset-doctor = "dataset_doctor.cli:main"
+dataset-doctor-audit = "dataset_doctor_audit.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["dataset_doctor"]
+packages = ["dataset_doctor_audit"]
 
 [tool.hatch.build.targets.sdist]
 # An explicit list means exactly that: anything not named is absent from the archive, and
 # Apache-2.0 section 4 requires the licence text to travel with a redistributed work.
 include = [
-    "dataset_doctor",
+    "dataset_doctor_audit",
     "docs",
     "examples",
     "tests",
@@ -119,15 +122,15 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["ARG", "PTH", "S101"]
 # The warnings filter in __init__ has to be installed before .models is imported.
-"dataset_doctor/__init__.py" = ["E402"]
+"dataset_doctor_audit/__init__.py" = ["E402"]
 # Markdown and HTML payload lines cannot be wrapped without changing the rendered text.
-"dataset_doctor/demo.py" = ["E501"]
-"dataset_doctor/reports/html.py" = ["E501"]
-"dataset_doctor/reports/markdown.py" = ["E501"]
+"dataset_doctor_audit/demo.py" = ["E501"]
+"dataset_doctor_audit/reports/html.py" = ["E501"]
+"dataset_doctor_audit/reports/markdown.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.11"
-packages = ["dataset_doctor"]
+packages = ["dataset_doctor_audit"]
 strict = false
 warn_unused_ignores = true
 warn_redundant_casts = true

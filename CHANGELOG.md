@@ -42,10 +42,25 @@ Everything between 0.1.0 and here is verification, not behaviour: no rule id, de
   decisions (copyright holder, `[project.urls]`, private vulnerability reporting, version string)
   that need a person.
 
+### Changed
+
+- **Installed identity: `dataset-doctor` → `dataset-doctor-audit` everywhere a namespace is
+  installed.** The distribution, the importable package (`dataset_doctor` → `dataset_doctor_audit`,
+  including the source directory) and the console script all carry the `-audit` suffix now, because
+  re-inspection of the unrelated PyPI `dataset-doctor` 1.0.1 wheel showed it ships *both* the
+  top-level package `dataset_doctor` and the `dataset-doctor` script — two wheels writing into the
+  same `site-packages` paths, last install wins. ADR 0006 records the widening; A16 is the register
+  entry. What deliberately keeps the short brand name: `dataset-doctor.yaml`, `.dataset-doctor/`,
+  `dataset-doctor-report/`, and "Dataset Doctor" in prose. No rule id, severity, `formal_impact`,
+  report schema or persisted-cache format changed, and the on-disk state that survives between
+  runs (manifests, snapshots) stores only `schema_version`, so no user cache is invalidated. Every
+  quoted CLI invocation in the rule documents and the README was re-measured afterwards.
+
 ### Fixed
 
 - **A fresh clone could not run.** An unanchored `reports/` pattern in `.gitignore` matched
-  `dataset_doctor/reports/`, so four report-writer modules were never committed and the first
+  `dataset_doctor/reports/` (the package's name before the identity change above), so four
+  report-writer modules were never committed and the first
   command of a new checkout raised `ImportError`. The patterns are now anchored and
   `tests/test_packaging.py` asks *git* whether every source module is tracked and unignored.
 - `pyproject.toml` declares the licence with the PEP 639 expression (`License-Expression:
@@ -78,7 +93,7 @@ Everything between 0.1.0 and here is verification, not behaviour: no rule id, de
 
 Suite: 153 test functions / 242 collected items → **212 passed, 30 skipped in 56 s** (2026-09-22,
 Python 3.13.1; every skip is the opt-in scale test or a documentation check for a rule that makes
-no such claim). `ruff format --check .` (103 files), `ruff check .`, `mypy dataset_doctor`
+no such claim). `ruff format --check .` (103 files), `ruff check .`, `mypy dataset_doctor_audit`
 (32 files) clean; wheel build checked locally. The 48 000-file scale test was **not** run in this
 round - it needs `DATASET_DOCTOR_SCALE=1` and about five minutes.
 
@@ -102,7 +117,7 @@ Experiment`. Read-only by default, no LLM, no network, no GPU, evidence attached
   on a V0.1 priority rule cannot be printed over with `SAFE`.
 - **Dataset fingerprint and diff**: `metadata` / `sampled` / `full` fingerprint modes, snapshots
   stored inside the dataset under `.dataset-doctor/snapshots/`, `audit --baseline`,
-  `dataset-doctor snapshot`, and `dataset-doctor diff` with finding-level new/resolved/changed
+  `dataset-doctor-audit snapshot`, and `dataset-doctor-audit diff` with finding-level new/resolved/changed
   comparison.
 - **Adapters** for tabular (CSV/TSV/Parquet/Excel incl. multi-sheet workbooks, one split per file
   or per column) and image folders (train/val/test layouts, label-from-directory), plus layout
@@ -113,7 +128,7 @@ Experiment`. Read-only by default, no LLM, no network, no GPU, evidence attached
 - **CI gating** via exit codes: `0` ok, `1` findings gate tripped, `2` bad request, `3` internal
   error, `130` interrupted; `--ci`, `--strict`, `--fail-on <severity>`.
 - **13 example fixtures** with `PLANTED_FAULTS.md` and a regenerated `examples/RESULTS.md`; three
-  generated demo datasets via `dataset-doctor demo`.
+  generated demo datasets via `dataset-doctor-audit demo`.
 - 114 test functions / 118 items covering all 37 spec test cases plus discovery, splitting and
   example-fixture wiring; `ruff`, `mypy` clean.
 - Documentation set: `docs/METHODOLOGY.md`, `docs/PROJECT_STATE.md`,
@@ -122,7 +137,7 @@ Experiment`. Read-only by default, no LLM, no network, no GPU, evidence attached
 
 ### Changed
 
-- Distribution name is `dataset-doctor-audit` while the CLI stays `dataset-doctor`: `dataset-doctor`
+- Distribution name is `dataset-doctor-audit` while the CLI stays `dataset-doctor-audit`: `dataset-doctor-audit`
   is already taken on PyPI by an unrelated auto-cleaning package. Documented in the README and
   ADR 0006.
 

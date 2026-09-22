@@ -34,7 +34,7 @@ jobs:
       - run: python -m pip install -e ".[dev]"
       - run: ruff format --check .
       - run: ruff check .
-      - run: mypy dataset_doctor
+      - run: mypy dataset_doctor_audit
 
   tests:
     name: pytest (${{ matrix.os }}, py${{ matrix.python-version }})
@@ -78,11 +78,11 @@ jobs:
           python -m venv .ci-venv
           .ci-venv/bin/python -m pip install --quiet --upgrade pip
           .ci-venv/bin/python -m pip install --quiet dist/*.whl
-          .ci-venv/bin/dataset-doctor --help
-          .ci-venv/bin/dataset-doctor audit examples/safe_tabular --ci -o .ci-report
+          .ci-venv/bin/dataset-doctor-audit --help
+          .ci-venv/bin/dataset-doctor-audit audit examples/safe_tabular --ci -o .ci-report
       - uses: actions/upload-artifact@v4
         with:
-          name: dataset-doctor-dists
+          name: dataset-doctor-audit-dists
           path: dist/
           retention-days: 14
           if-no-files-found: error

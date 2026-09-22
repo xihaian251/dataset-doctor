@@ -15,7 +15,7 @@ GPU, and never edits the dataset it inspects.
 ## Demo
 
 ```bash
-dataset-doctor demo --output ./demo-datasets
+dataset-doctor-audit demo --output ./demo-datasets
 ```
 
 This generates three small datasets with *known, deliberately planted* faults (each
@@ -96,25 +96,30 @@ evidence block.
 ## Quick Start
 
 > **Release status:** V0.1 is not published to PyPI yet. Install from a checkout for now;
-> the `dataset-doctor` console script is identical either way.
+> the `dataset-doctor-audit` console script is identical either way.
 >
-> **Name collision, read before installing anything.** An unrelated package already owns
-> `dataset-doctor` on PyPI (MIT, 1.0.1, uploaded 2026-03-25 - a tabular *auto-cleaning* tool,
-> which is the opposite of what this project does). Our distribution name is therefore
-> `dataset-doctor-audit`, and `pip install dataset-doctor` is **not** this tool. Do not install
-> both into one environment; they share the importable package name `dataset_doctor`.
+> **Name collision, and why every one of our namespaces carries the `-audit` suffix.** An
+> unrelated package owns `dataset-doctor` on PyPI (MIT, 1.0.1, uploaded 2026-03-25 - a tabular
+> *auto-cleaning* tool, which is the opposite of what this project does). It ships both the
+> import package `dataset_doctor` and the command `dataset-doctor`, so sharing either name
+> would mean two wheels overwriting each other's files in one environment. Ours are
+> `pip install dataset-doctor-audit`, `import dataset_doctor_audit`, and
+> `dataset-doctor-audit audit ./data` - three namespaces that collide with nothing on the
+> index. `pip install dataset-doctor` is **not** this tool, and `pip show dataset-doctor-audit`
+> is. The brand-level file names keep the short form: the config file is `dataset-doctor.yaml`
+> and the per-dataset workdir is `.dataset-doctor/`.
 
 ```bash
-git clone <your-fork>/dataset-doctor && cd dataset-doctor
+git clone <your-fork>/dataset-doctor-audit && cd dataset-doctor-audit
 pip install -e ".[image,excel]"
 ```
 
 Point it at a directory of CSVs, or at an `train/<class>/*.jpg` image folder:
 
 ```bash
-dataset-doctor init ./dataset          # writes a commented dataset-doctor.yaml next to the data
-dataset-doctor scan  ./dataset         # what was found: splits, samples, schema - no verdict
-dataset-doctor audit ./dataset -o ./report
+dataset-doctor-audit init ./dataset          # writes a commented dataset-doctor.yaml next to the data
+dataset-doctor-audit scan  ./dataset         # what was found: splits, samples, schema - no verdict
+dataset-doctor-audit audit ./dataset -o ./report
 ```
 
 `audit` writes `report.json`, `report.md` and `report.html` and prints the summary box.
@@ -183,7 +188,7 @@ same `patient_id`, one in train and one in test. Declare the entity column and D
 reports every entity that appears in more than one split, with row counts per split:
 
 ```bash
-dataset-doctor audit ./cohort --group-by patient_id
+dataset-doctor-audit audit ./cohort --group-by patient_id
 ```
 
 Or in `dataset-doctor.yaml`:
@@ -197,7 +202,7 @@ When the leakage is real, the fix is a group-safe split, and the tool can write 
 a **new** directory without touching the original:
 
 ```bash
-dataset-doctor split ./cohort.csv --group-by patient_id --output ./cohort_resplit
+dataset-doctor-audit split ./cohort.csv --group-by patient_id --output ./cohort_resplit
 ```
 
 A declared group column whose values are unique per row produces a `LOW` advisory, not a
@@ -221,14 +226,14 @@ boundary violation, and it measures as:
   - DD013 Label distribution shift: train vs test: 60 samples, severity HIGH
 ```
 
-`RISKY`, not `INVALID`, and `dataset-doctor audit` exits 0 on it. Whether a shift
+`RISKY`, not `INVALID`, and `dataset-doctor-audit audit` exits 0 on it. Whether a shift
 invalidates *your* evaluation is a task question - a harder benchmark is a design choice.
 The tool states the measurement and leaves the decision where it belongs.
 
 ## Dataset Fingerprint
 
 ```bash
-dataset-doctor fingerprint ./dataset
+dataset-doctor-audit fingerprint ./dataset
 ```
 
 A fingerprint is the ordered manifest hash: one record per sample with its relative path,
@@ -246,8 +251,8 @@ hashing is partial, but every rule still reaches a verdict.
 ## Dataset Diff
 
 ```bash
-dataset-doctor snapshot ./dataset --name v1
-dataset-doctor diff ./dataset --baseline v1
+dataset-doctor-audit snapshot ./dataset --name v1
+dataset-doctor-audit diff ./dataset --baseline v1
 ```
 
 The diff names the added, removed and modified samples, the labels that flipped, and -
@@ -266,14 +271,14 @@ Every audit writes all three, in the same content:
 - `report.md` - reviewable in a pull request, evidence blocks collapsed
 - `report.html` - self-contained single file, no external assets, safe to email
 
-`dataset-doctor report ./report.json -f md -f html` re-renders from a stored JSON without
+`dataset-doctor-audit report ./report.json -f md -f html` re-renders from a stored JSON without
 re-reading the data. Reports never contain raw field values from PII-suspect columns -
 only counts (see [SECURITY.md](SECURITY.md)).
 
 ## CI
 
 ```bash
-dataset-doctor audit ./dataset --ci
+dataset-doctor-audit audit ./dataset --ci
 ```
 
 | Invocation | Fails (exit 1) when |
@@ -292,13 +297,13 @@ caution can never end up looser than the gate you started with.
 The workflow below is the shape for **your** repository. This project's own gates live in
 [.github/workflows/ci.yml](.github/workflows/ci.yml) - format/lint/types, the suite on three
 Python versions across Ubuntu and Windows, and a wheel built and then audited through its
-installed `dataset-doctor` entry point. It has no publish step, no upload to a package index
+installed `dataset-doctor-audit` entry point. It has no publish step, no upload to a package index
 and no tag trigger.
 
 ```yaml
 # .github/workflows/dataset.yml
 - run: pip install -e ".[image,excel]"
-- run: dataset-doctor audit data/cohort --ci --baseline data/cohort/.dataset-doctor/snapshots/accepted.json
+- run: dataset-doctor-audit audit data/cohort --ci --baseline data/cohort/.dataset-doctor/snapshots/accepted.json
 ```
 
 ## Methodology

@@ -8,7 +8,7 @@
 | Evidence type | `DETERMINISTIC` (unlabelled) · `HEURISTIC` (cardinality anomaly) |
 | Applies to | tabular, image |
 | Requires | a label column or folder layout; `labels.source: none` opts out |
-| Detector | `dataset_doctor/detectors/labels.py::detect_missing_labels` |
+| Detector | `dataset_doctor_audit/detectors/labels.py::detect_missing_labels` |
 
 ## Definition
 

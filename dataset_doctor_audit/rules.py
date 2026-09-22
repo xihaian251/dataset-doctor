@@ -99,7 +99,7 @@ REGISTRY: dict[str, AuditRule] = {
             false_positive_notes="Only meaningful when the group key is a real entity id. A column named "
             "patient_id that is actually a per-row primary key produces one group per sample and hides "
             "nothing; a column that repeats per hospital visit is a grouping factor by design.",
-            remediation="Re-split with `dataset-doctor split --group-by <column>` so each entity lands in "
+            remediation="Re-split with `dataset-doctor-audit split --group-by <column>` so each entity lands in "
             "exactly one split, then re-audit.",
             implemented=True,
             doc_path="docs/rules/DD005-group-leakage.md",

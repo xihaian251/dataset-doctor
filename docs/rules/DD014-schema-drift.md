@@ -8,7 +8,7 @@
 | Evidence type | `DETERMINISTIC` |
 | Applies to | tabular |
 | Requires | at least two non-empty splits of readable data |
-| Detector | `dataset_doctor/detectors/structural.py::detect_schema_drift` |
+| Detector | `dataset_doctor_audit/detectors/structural.py::detect_schema_drift` |
 
 ## Definition
 

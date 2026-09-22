@@ -159,7 +159,7 @@ def load_manifest(path: Path) -> DatasetManifest:
     from .errors import SnapshotError
 
     if not path.is_file():
-        raise SnapshotError(f"Manifest not found: {path}. Run `dataset-doctor scan` first.")
+        raise SnapshotError(f"Manifest not found: {path}. Run `dataset-doctor-audit scan` first.")
     with path.open("r", encoding="utf-8") as handle:
         lines = [line for line in handle.read().splitlines() if line.strip()]
     if not lines:

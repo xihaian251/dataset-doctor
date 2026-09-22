@@ -215,7 +215,7 @@ class Config(BaseModel):
             if not re.fullmatch(r"DD\d{3}", sup.rule):
                 raise ConfigError(
                     f"suppress.rule must look like 'DD003', got '{sup.rule}'. "
-                    "Run `dataset-doctor rules` to list rule ids."
+                    "Run `dataset-doctor-audit rules` to list rule ids."
                 )
             if not sup.reason.strip():
                 raise ConfigError(f"suppress entry for {sup.rule} needs a non-empty reason")
@@ -360,7 +360,9 @@ def _unknown_policy_keys(raw: dict[str, Any]) -> list[str]:
         return []
     known = set(Policies.model_fields)
     return [
-        f"Unknown policy block '{key}' is ignored (see `dataset-doctor rules`)" for key in policies if key not in known
+        f"Unknown policy block '{key}' is ignored (see `dataset-doctor-audit rules`)"
+        for key in policies
+        if key not in known
     ]
 
 

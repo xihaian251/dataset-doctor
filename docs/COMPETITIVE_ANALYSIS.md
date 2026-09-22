@@ -33,30 +33,38 @@ interesting relative to what already exists.
 
 DVC note: the repository moved from `iterative/dvc` to `treeverse/dvc`; cite the current location.
 
-### The name `dataset-doctor` is already taken
+### The short name `dataset-doctor` is already taken
 
-Verified from PyPI metadata on 2026-09-21:
+Verified from PyPI metadata on 2026-09-21 and re-verified from the downloaded 1.0.1 wheel on
+2026-09-22:
 
 | | |
 | --- | --- |
 | Distribution | `dataset-doctor` - releases 1.0.0 and 1.0.1, both uploaded 2026-03-25 |
 | License / Python | MIT / `>=3.11` |
 | Home page | github.com/Mirdula18/dataset-doctor (author: "Dataset Doctor Contributors") |
+| Import package it installs | `dataset_doctor` |
+| Console script it installs | `dataset-doctor` |
 | Dependencies | pandas, numpy, scikit-learn, PyYAML, rich, typer |
 | Self-described | "Automatically diagnose **and clean** messy datasets"; tabular only |
 | Commands | `diagnose` / `report` / `clean` [--output, --normalize] / `display` / `show` / `init-config`; Python API `dd.diagnose`, `dd.auto_fix` |
 | Overlap with us | none of DD002-DD009: no split integrity, no group/entity, no temporal, no label conflict, no snapshot/diff, no evidence ids, no formal-evaluation verdict |
 
-Two consequences, both already handled:
+Three consequences:
 
 1. **`pip install dataset-doctor` is not this tool**, and its CLI has no `audit` subcommand, so a
    reader following the spec's headline command literally would get an error from someone else's
-   package. Our distribution is therefore named `dataset-doctor-audit` (name checked free on
-   PyPI the same day, along with `datasetdoctor` and `ds-doctor`), while the console script stays
-   `dataset-doctor` for the brand. The README states this next to the install instructions.
-2. **The import name still collides** - both projects provide a `dataset_doctor` package. That is
-   the cost of keeping the brand, and it is documented rather than papered over: do not install
-   both in one environment. If a rename ever becomes necessary, `datasetdoctor` is the fallback.
+   package. Our distribution is `dataset-doctor-audit` (name checked free on PyPI 2026-09-21, along
+   with `datasetdoctor` and `ds-doctor`).
+2. **All three of our namespaces carry the suffix** - `dataset-doctor-audit` on the index,
+   `dataset_doctor_audit` for `import`, `dataset-doctor-audit` as the command. Sharing the import
+   package or the console script with someone else's wheel means two installations overwrite each
+   other's files in one `site-packages`, so suffixing only the distribution name was not enough;
+   ADR 0006 records the widening. `datasetdoctor` remains the fallback if the index ever changes.
+3. **Brand-level artefacts keep the short name**, because they are file paths inside a user's data
+   rather than installed namespaces: the config file is `dataset-doctor.yaml`, the per-dataset
+   workdir `.dataset-doctor/`, and report directories `dataset-doctor-report/`. Neither project
+   writes to those, so there is nothing to collide.
 
 Its `clean`/`auto_fix` behaviour is also the cleanest contrast we have: that project imputes
 missing values, drops duplicate rows and removes constant columns, i.e. it edits the dataset.

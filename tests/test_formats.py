@@ -16,9 +16,9 @@ import pytest
 from conftest import TABULAR_CONFIG, row, write_rows
 from PIL import Image
 
-from dataset_doctor import audit_dataset
-from dataset_doctor.errors import DatasetDoctorError
-from dataset_doctor.models import DatasetType
+from dataset_doctor_audit import audit_dataset
+from dataset_doctor_audit.errors import DatasetDoctorError
+from dataset_doctor_audit.models import DatasetType
 
 COLUMNS = ["record_id", "patient_id", "age", "sex", "bmi", "value", "target"]
 

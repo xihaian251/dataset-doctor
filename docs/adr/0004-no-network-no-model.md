@@ -22,7 +22,7 @@ stripped child environment with no GPU.
 - Detection is deterministic and inspectable: the price is that "semantic leakage" is out of scope
   and is published as a Limitation, not hidden behind a model call.
 - An audit costs no tokens and cannot change its answer when a vendor updates a model.
-- `pip install` works offline after the download, and `dataset-doctor demo` can generate fixtures
+- `pip install` works offline after the download, and `dataset-doctor-audit demo` can generate fixtures
   anywhere - which is how the README's first screen can show a real finding without asking for the
   reader's data.
 - Some checks are weaker than a learned equivalent would be (image property shift instead of

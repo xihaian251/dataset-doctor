@@ -12,11 +12,11 @@ dist/
 build/
 *.egg-info/
 # Report output from manual runs. Anchored to the repository root on purpose: the
-# unanchored form also matched `dataset_doctor/reports/`, the source package that
+# unanchored form also matched `dataset_doctor_audit/reports/`, the source package that
 # `cli.py` imports, and left it out of the first commit - a committed tree that
 # raises ImportError is worse than a stray directory in `git status`.
 /report/
 /reports/
-# What `dataset-doctor audit ./somewhere` writes when no --output is given, so a
+# What `dataset-doctor-audit audit ./somewhere` writes when no --output is given, so a
 # documentation run in the repository root must never reach a commit.
 /dataset-doctor-report/

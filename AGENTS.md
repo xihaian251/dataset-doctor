@@ -34,9 +34,9 @@ Non-negotiables, in the form the spec requires them (section 157):
 ## Repo conventions
 
 - Python ≥ 3.11, `from __future__ import annotations`, type hints on public functions,
-  `mypy dataset_doctor` clean, `ruff format` + `ruff check` clean (line length 120, nested
+  `mypy dataset_doctor_audit` clean, `ruff format` + `ruff check` clean (line length 120, nested
   ternaries rejected by `SIM108`).
-- Detectors live in `dataset_doctor/detectors/`, one module per family, and raise
+- Detectors live in `dataset_doctor_audit/detectors/`, one module per family, and raise
   `NotApplicable` / `InsufficientEvidence` instead of returning an empty list when they cannot
   measure. `rules.py` owns the registry, the policy application and the verdict; severity changes
   happen nowhere else.
@@ -55,10 +55,10 @@ Non-negotiables, in the form the spec requires them (section 157):
 pip install -e ".[image,excel]"        # extras: imagehash for DD004, openpyxl for Excel
 PYTHONPATH=. pytest -rA                         # TEST 37 (the scale test skips itself)
 DATASET_DOCTOR_SCALE=1 PYTHONPATH=. pytest tests/test_scale.py   # the 48 000-file run, ~5 min
-ruff format dataset_doctor tests examples && ruff check .   # TEST 35
-mypy dataset_doctor                                         # TEST 36
+ruff format dataset_doctor_audit tests examples && ruff check .   # TEST 35
+mypy dataset_doctor_audit                                         # TEST 36
 python examples/build.py --audit     # regenerate examples/RESULTS.md after any detector change
-PYTHONPATH=. python -c "from dataset_doctor.cli import main; main()" demo ./out
+PYTHONPATH=. python -c "from dataset_doctor_audit.cli import main; main()" demo ./out
 ```
 
 `pyproject.toml` puts `-q` in pytest's `addopts`, so a typed `-q` becomes `-qq` and prints no
@@ -71,7 +71,7 @@ resumably/cache-first, not in the background.
 ## What not to do
 
 - Do not add a score, a percentage "health index", or a colour that stands in for the verdict.
-- Do not make `dataset-doctor audit` exit 0 on a `BLOCKING` finding to appease a CI complaint.
+- Do not make `dataset-doctor-audit audit` exit 0 on a `BLOCKING` finding to appease a CI complaint.
 - Do not weaken a fixture to make a test pass; the control fixtures in `examples/` exist precisely
   so false positives are visible.
 - Do not add a licence to a user's dataset, or auto-fill provenance.

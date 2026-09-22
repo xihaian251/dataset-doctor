@@ -8,7 +8,7 @@
 | Evidence type | `DETERMINISTIC` |
 | Applies to | image + tabular |
 | Requires | a fingerprint mode that opens the files (`full`, `sampled`) for a complete answer |
-| Detector | `dataset_doctor/detectors/integrity.py::detect_corrupt_samples` |
+| Detector | `dataset_doctor_audit/detectors/integrity.py::detect_corrupt_samples` |
 | In V0.1 rule set | yes |
 
 ## Definition

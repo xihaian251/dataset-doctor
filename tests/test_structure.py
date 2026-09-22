@@ -19,8 +19,8 @@ from typing import Any
 import pytest
 from conftest import TABULAR_CONFIG, row, write_rows
 
-from dataset_doctor.errors import DatasetDoctorError
-from dataset_doctor.models import AuditStatus, EvalSafety, EvidenceType, FormalImpact, Severity
+from dataset_doctor_audit.errors import DatasetDoctorError
+from dataset_doctor_audit.models import AuditStatus, EvalSafety, EvidenceType, FormalImpact, Severity
 
 COLUMNS = ["record_id", "patient_id", "age", "sex", "bmi", "value", "target"]
 
@@ -653,3 +653,19 @@ def test_dd021_declines_an_image_dataset_and_does_not_call_it_safe(images: Any, 
     assert outcome is not None and outcome.status is AuditStatus.UNSUPPORTED
     assert outcome.skip_reason == "PII scanning covers table columns"
     assert outcome.suppression_reason is None, "abstaining is not suppressing"
+
+
+def test_a_config_spelt_dot_yml_is_still_discovered_and_its_declarations_apply(tabular: Any, run_audit: Any) -> None:
+    """`_find_config` accepts both spellings, and the shorter one is what a user may well write.
+
+    The assertion is that the declaration *takes effect*, not that the file opens: with no
+    config discovered there is no group column, so DD005 abstains instead of measuring.
+    """
+    train = [row(f"r{i:03d}", f"p{i % 5:02d}", index=i) for i in range(40)]
+    test = [row(f"t{i:03d}", f"p{i % 5:02d}", index=40 + i) for i in range(20)]
+    root = tabular("yml_spelling", config=None, train=train, test=test)
+    (root / "dataset-doctor.yml").write_text(TABULAR_CONFIG, encoding="utf-8")
+
+    findings = run_audit(root).by_rule("DD005")
+    assert findings, "a `.yml` config must bind groups.columns or DD005 has nothing to measure"
+    assert findings[0].severity is Severity.CRITICAL

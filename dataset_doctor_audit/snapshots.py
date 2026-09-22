@@ -2,7 +2,7 @@
 
 A snapshot stores the manifest projection plus the identity and a findings digest -
 never the data itself (spec section 67). That is what makes it reasonable to commit
-to a repository, and what makes ``dataset-doctor diff`` able to answer "did the test
+to a repository, and what makes ``dataset-doctor-audit diff`` able to answer "did the test
 set change?" months later.
 """
 
@@ -160,10 +160,11 @@ def resolve_snapshot(root: Path, name: str, extra_roots: tuple[Path, ...] = ()) 
             matches.append((snapshot, path))
     if len(matches) == 1:
         return matches[0]
+    known_names = ", ".join(sorted(path.stem for path in available)) or "(none - run `dataset-doctor-audit snapshot`)"
     raise SnapshotError(
         f"No snapshot named '{name}' under {snapshot_root(root)}"
         + "".join(f" or {snapshot_root(Path(extra))}" for extra in extra_roots)
-        + f". Known: {', '.join(sorted(path.stem for path in available)) or '(none - run `dataset-doctor snapshot`)'}."
+        + f". Known: {known_names}."
         " A snapshot is stored inside the dataset it describes, so pass that directory as the other"
         " side of the diff, or give the path to the .json file."
     )

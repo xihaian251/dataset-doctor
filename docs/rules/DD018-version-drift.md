@@ -7,8 +7,8 @@
 | Formal impact | `POTENTIAL` (the drift DD019 measures out of the same diff is `BLOCKING`) |
 | Evidence type | `DETERMINISTIC` |
 | Applies to | image + tabular |
-| Requires | a baseline: `audit --baseline <name\|path>`, or two snapshots for `dataset-doctor diff` |
-| Detector | `dataset_doctor/detectors/versioning.py::detect_version_drift` |
+| Requires | a baseline: `audit --baseline <name\|path>`, or two snapshots for `dataset-doctor-audit diff` |
+| Detector | `dataset_doctor_audit/detectors/versioning.py::detect_version_drift` |
 | In V0.1 rule set | yes |
 
 ## Definition
@@ -36,8 +36,8 @@ and those are escalated to [DD019](DD019-split-drift.md) with their own severity
 `.dataset-doctor/snapshots/<name>.json`, written by either:
 
 ```bash
-dataset-doctor audit ./data --save-snapshot v1     # audit + snapshot in one pass
-dataset-doctor snapshot ./data --name v1           # snapshot only
+dataset-doctor-audit audit ./data --save-snapshot v1     # audit + snapshot in one pass
+dataset-doctor-audit snapshot ./data --name v1           # snapshot only
 ```
 
 `--baseline` accepts that name, a dataset id, or a path to a `.json` file.
@@ -68,7 +68,7 @@ right-hand side has no findings to compare. Reporting the baseline's findings as
 would be this tool manufacturing its own silent PASS. Use two *audited* snapshots:
 
 ```bash
-dataset-doctor diff .dataset-doctor/snapshots/v1.json .dataset-doctor/snapshots/v2.json
+dataset-doctor-audit diff .dataset-doctor/snapshots/v1.json .dataset-doctor/snapshots/v2.json
 ```
 
 ## False Positives
@@ -169,7 +169,7 @@ Snapshot every dataset a published number came from, then diff before comparing 
 across runs:
 
 ```bash
-dataset-doctor audit ./data --save-snapshot v2 --baseline v1 -o report-v2
+dataset-doctor-audit audit ./data --save-snapshot v2 --baseline v1 -o report-v2
 ```
 
 Record the dataset version (`dataset_id` + `manifest_hash`, both in every report) next to the

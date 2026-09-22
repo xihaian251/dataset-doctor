@@ -8,7 +8,7 @@
 | Evidence type | `DETERMINISTIC` / `HEURISTIC` |
 | Applies to | tabular |
 | Requires | a label column (declared or inferred), at least two splits |
-| Detector | `dataset_doctor/detectors/leakage.py::detect_target_leakage` |
+| Detector | `dataset_doctor_audit/detectors/leakage.py::detect_target_leakage` |
 
 ## Definition
 
@@ -95,7 +95,7 @@ the deterministic checks are exact arithmetic and never thresholded.
 
 ## Examples
 
-From `dataset-doctor demo` on the 316-sample `leaky_tabular` fixture
+From `dataset-doctor-audit demo` on the 316-sample `leaky_tabular` fixture
 (`examples/RESULTS.md`, verdict `FORMAL_EVAL_INVALID`), one column per level:
 
 ```text

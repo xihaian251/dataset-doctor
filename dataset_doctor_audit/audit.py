@@ -7,7 +7,7 @@ the two a reviewer actually checks:
   either returns findings, raises ``NotApplicable`` (NOT_RUN / UNSUPPORTED) or
   raises ``InsufficientEvidence`` (INCONCLUSIVE). Each becomes a ``RuleOutcome``
   even when the finding list is empty, so the report states its own coverage.
-* Detectors report facts; only :mod:`dataset_doctor.rules` turns a fact into a
+* Detectors report facts; only :mod:`dataset_doctor_audit.rules` turns a fact into a
   severity, and the only input it accepts is policy (spec section 107).
 """
 
@@ -48,7 +48,7 @@ from .models import (
 from .rules import REGISTRY, apply_policy, eval_safety, outcome_for, severity_counts
 from .snapshots import build_snapshot, resolve_snapshot, save_snapshot
 
-LOGGER = logging.getLogger("dataset_doctor")
+LOGGER = logging.getLogger("dataset_doctor_audit")
 
 DETECTORS: list[tuple[str, Callable[[AuditContext], list[Any]]]] = [
     ("DD001", structural.detect_identity),
@@ -522,7 +522,7 @@ def diff_targets(
     right: str | Path,
     fingerprint: str | None = None,
 ) -> DatasetDiff:
-    """``dataset-doctor diff A B``, where each side is a dataset directory or a snapshot."""
+    """``dataset-doctor-audit diff A B``, where each side is a dataset directory or a snapshot."""
 
     search_roots = tuple(Path(str(value)).expanduser() for value in (left, right))
 

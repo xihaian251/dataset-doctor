@@ -106,7 +106,7 @@ def detect_group_leakage(ctx: AuditContext) -> list[Any]:
                         ],
                     },
                     recommended_action=(
-                        f"Re-split with `dataset-doctor split <file> --group-by {column}` so every "
+                        f"Re-split with `dataset-doctor-audit split <file> --group-by {column}` so every "
                         f"{column} lands in exactly one split, then re-audit."
                     ),
                     metadata={"scope": "cross_split", "affected_sample_ids": affected[:200]},

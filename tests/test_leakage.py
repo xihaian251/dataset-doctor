@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from conftest import IMAGE_CONFIG, TABULAR_CONFIG, row
 
-from dataset_doctor.models import AuditStatus, EvalSafety, FormalImpact, Severity
+from dataset_doctor_audit.models import AuditStatus, EvalSafety, FormalImpact, Severity
 
 pytest.importorskip("imagehash", reason="DD004 needs the optional `image` extra")
 
