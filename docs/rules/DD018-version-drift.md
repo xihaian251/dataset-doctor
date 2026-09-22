@@ -103,10 +103,10 @@ two brand-new rows appended, two rows moved into `test.csv`, and two evaluation 
 
 ```text
 DD018-0001 LOW WARNING (POTENTIAL) DETERMINISTIC
-Dataset changed since baseline (v1 -> C:\Users\‹elided›\Documents\Qoder\2026-09-20\858e417c\_doccheck\vd)
+Dataset changed since baseline (v1 -> C:\Users\‹user>\scratch\_doccheck\vd)
 Added 2, removed 3, modified 0, relabelled 2, moved between splits 2.
 { "left": "v1",
-  "right": "C:\\Users\\‹elided›\\Documents\\Qoder\\2026-09-20\\858e417c\\_doccheck\\vd",
+  "right": "C:\\Users\\‹user>\\scratch\\_doccheck\\vd",
   "added": ["train.csv::sr09000", "train.csv::sr09001"],
   "removed": ["1f0423c0465ba918", "94c0ff3150cd9a92", "b0623c86878d39af"],
   "modified": [],
@@ -120,7 +120,8 @@ limitations:
     diff is computed before this run's rules have produced findings. ...
 ```
 
-Only the run directory is elided here (it carries the machine's account name); everything else
+Only the run directory is genericised here - the real one named this machine's account and this
+project's scratch folder, and a rule document is not the place to publish either; everything else
 is the report's own text. `right` is the *resolved absolute path* of the audited directory,
 which is why the two sides of a diff read so differently on a borrowed laptop.
 
