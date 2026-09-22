@@ -24,12 +24,19 @@ jobs:
   static:
     name: Format, lint, types
     runs-on: ubuntu-latest
+    # Without this a hung install costs the platform default of six hours per job; the
+    # whole suite measured 77 s on a clean venv with only the declared extras installed.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
+          # setup-python's pip cache key defaults to requirements files, of which this project
+          # has none - every dependency is declared in pyproject.toml, so without this line the
+          # cache is keyed on nothing and every run reinstalls the world.
+          cache-dependency-path: pyproject.toml
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e ".[dev]"
       - run: ruff format --check .
@@ -39,6 +46,9 @@ jobs:
   tests:
     name: pytest (${{ matrix.os }}, py${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
+    # Without this a hung install costs the platform default of six hours per job; the
+    # whole suite measured 77 s on a clean venv with only the declared extras installed.
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -58,6 +68,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
+          # setup-python's pip cache key defaults to requirements files, of which this project
+          # has none - every dependency is declared in pyproject.toml, so without this line the
+          # cache is keyed on nothing and every run reinstalls the world.
+          cache-dependency-path: pyproject.toml
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e ".[dev]"
       - run: python -m pytest -rA -v
@@ -65,12 +79,19 @@ jobs:
   build:
     name: Wheel and sdist
     runs-on: ubuntu-latest
+    # Without this a hung install costs the platform default of six hours per job; the
+    # whole suite measured 77 s on a clean venv with only the declared extras installed.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
+          # setup-python's pip cache key defaults to requirements files, of which this project
+          # has none - every dependency is declared in pyproject.toml, so without this line the
+          # cache is keyed on nothing and every run reinstalls the world.
+          cache-dependency-path: pyproject.toml
       - run: python -m pip install --upgrade pip build twine
       - run: python -m build
       - name: Check both distributions before anyone can install them
@@ -87,6 +108,16 @@ jobs:
           .ci-venv/bin/python -m pip install --quiet dist/*.whl
           .ci-venv/bin/dataset-doctor-audit --help
           .ci-venv/bin/dataset-doctor-audit audit examples/safe_tabular --ci -o .ci-report
+      - name: Install the sdist the same way and audit through it too
+        # The wheel is a file copy; the sdist is re-built by whoever installs it, so it is the
+        # only one of the two that can ship a module the packaging forgot. Checking the wheel
+        # alone leaves that class of bug in the release.
+        run: |
+          python -m venv .ci-venv-sdist
+          .ci-venv-sdist/bin/python -m pip install --quiet --upgrade pip
+          .ci-venv-sdist/bin/python -m pip install --quiet dist/*.tar.gz
+          .ci-venv-sdist/bin/dataset-doctor-audit --help
+          .ci-venv-sdist/bin/dataset-doctor-audit audit examples/safe_tabular --ci -o .ci-report-sdist
       - uses: actions/upload-artifact@v4
         with:
           name: dataset-doctor-audit-dists
