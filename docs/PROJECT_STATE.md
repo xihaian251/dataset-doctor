@@ -232,9 +232,15 @@ identifier, and DD018/DD019 measure nothing without a baseline - `NOT_RUN` is no
    to the COMPETITIVE_ANALYSIS fact table; the fact table wins on any disagreement).
 2. ~~Close the section 6 gaps~~ Done 2026-09-22: all listed rules and modes now have named
    assertions (section 6 records which); suite went 118 -> 134 collected items, gates green.
-3. Real repository → then add `[project.urls]`, CI workflow (the YAML snippet is already in
-   README's CI section), and a release tag. Do not publish to PyPI before step 2 or before the
-   name-collision note has a maintainer's eyes on it.
+3. ~~Real repository~~ Done 2026-09-22: `git init -b main` and one root commit carrying all 481
+   tracked files, after a `.gitignore` for caches, `dist/`, and the per-dataset
+   `.dataset-doctor/` workdir. The suite was re-run against the committed tree (133 passed,
+   1 deselected; `ruff format --check`, `ruff check`, `mypy` clean). **Still open and deliberately
+   not done**: hosting and release - remote setup, `[project.urls]`, the CI workflow (the YAML
+   snippet is already in README's CI section), a signed tag, and a PyPI publish under the
+   distribution name `dataset-doctor-audit`. Those are irreversible or shared-state, so they
+   wait for the maintainer's explicit go-ahead, and the name-collision note in the README should
+   have a human's eyes on it before anything is published.
 4. Re-run `python examples/build.py` after any detector change; `examples/RESULTS.md` and the
    doc examples drift silently otherwise.
 
