@@ -8,7 +8,9 @@ project side.
 
 ## 1. Reproduce the release locally
 
-Run from a clean checkout (`.venv` recreated, not reused):
+Run from a fresh, clean checkout or detached worktree created from the exact release commit
+(`.venv` recreated, not reused). Do not build a release artefact from a long-lived worktree: Git
+can report it clean while its on-disk line endings no longer match the commit's blobs.
 
 ```bash
 python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\activate
@@ -62,12 +64,16 @@ Then record what was actually measured, in this order:
       lists directories, but the backend adds untracked files too, so anything sitting in the
       working tree that `.gitignore` does not cover is published: on 2026-09-22 a throwaway venv
       left in the checkout put 2 485 third-party files into the archive (495 files became 2 980).
-- [ ] Every `.py` in both archives is byte-identical to its blob at the commit being built
-      (`git show HEAD:path`), and the wheel's hash repeats across two builds. A build reads the
-      working tree, not the index, and `core.autocrlf=true` can leave CRLF there while
-      `git status` still reports the tree clean - so "clean" does not prove the artefact matches
-      the commit. Measured 2026-09-22: 32 package modules, 0 mismatches, wheel hash identical
-      across three builds from two different commits.
+- [ ] Every version-controlled file included in either archive is byte-identical to its blob at
+      the commit being built (`git show HEAD:path`), not just the `.py` modules. Enumerate the full
+      sdist and compare every tracked entry, including CSV fixtures, documentation, configuration,
+      tests and repository metadata; check the wheel's tracked package files the same way. Generated
+      packaging metadata such as `PKG-INFO`, `METADATA` and `RECORD` is validated separately. A build
+      reads the working tree, not the index, and `core.autocrlf=true` can leave CRLF there while
+      `git status` still reports the tree clean - so "clean" does not prove the artefact matches the
+      commit. Also require the wheel's hash to repeat across two builds. Measured 2026-09-22: 32
+      package modules, 0 mismatches, wheel hash identical across three builds from two different
+      commits.
 - [ ] `mypy` needs `numpy<2.5` in the environment while `[tool.mypy]` holds `python_version =
       "3.11"`: numpy 2.5 vendors PEP 695 `type` statements mypy cannot parse at that target, and
       the run aborts before reaching our files. CI's static job installs the ceiling; the shipped
@@ -80,12 +86,10 @@ Then record what was actually measured, in this order:
 
 ## 3. Decisions that must be made, not assumed
 
-- [x] **Copyright holder.** Resolved 2026-09-22. `LICENSE` now reads `Copyright 2026 冯硕`, the named
-      holder, replacing the `Dataset Doctor contributors` placeholder; the Apache-2.0 licence text
-      around it is unmodified. One thing was *not* changed and needs a person: `pyproject.toml`'s
-      `authors` still carries the collective label `Dataset Doctor contributors`. That is a credit
-      line rather than a copyright assertion, so it does not contradict the licence, but whether the
-      published metadata should name the holder too is the maintainer's call, not a docs edit's.
+- [x] **Author and copyright holder.** Resolved 2026-09-22. `LICENSE` reads `Copyright 2026 冯硕`,
+      the named holder, replacing the former collective placeholder; the Apache-2.0 licence text
+      around it is unmodified. `pyproject.toml` now also names `冯硕` as the current sole author, so
+      the published author metadata and copyright attribution agree.
 - [x] **`[project.urls]`.** Added 2026-09-22: `Homepage`, `Repository` and `Issues` point at
       `github.com/xihaian251/dataset-doctor`, the public repository created that day. Deliberately no
       `Changelog` key — a changelog URL wants a release tag or a published page, and neither exists

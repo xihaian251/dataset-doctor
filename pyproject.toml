@@ -20,7 +20,7 @@ description = "Detect data leakage before it corrupts your ML experiment. Local-
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
-authors = [{ name = "Dataset Doctor contributors" }]
+authors = [{ name = "冯硕" }]
 keywords = [
     "data-leakage",
     "dataset",
