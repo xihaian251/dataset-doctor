@@ -216,7 +216,7 @@ the column then reads as 2-of-2. Fillers in PII fixtures must be real strings (`
 | `dataset-doctor-audit demo` leaky_images | 146 findings, `INVALID` | demo run log, 2026-09-21 |
 | `examples/` fixtures (13, incl. 6 `unsafe_*`) | per-fixture verdicts and counts | `examples/RESULTS.md`, regenerate with `python examples/build.py --audit` |
 | Single audit wall time (fixture-scale) | 1 883 ms | audit run log, 2026-09-21 |
-| Scale: 60 000 image samples (50 000 train + 10 000 test), cold hash cache | 487.7 s and 467.8 s, peak RSS 396 MB | `tests/test_scale.py` TEST 20 passed x2, 2026-09-22, HEAD `1a671be`, Windows 11 / Python 3.13.1 / pytest 9.1.1 |
+| Scale: 60 000 image samples (50 000 train + 10 000 test), cold hash cache | 487.7 s and 467.8 s, peak RSS 396 MB | `tests/test_scale.py` TEST 20 passed x2, 2026-09-22, HEAD `1a671be` with the print statement moved above the ceilings (committed as `47f208e`), Windows 11 / Python 3.13.1 / pytest 9.1.1. `dataset_doctor_audit/` is byte-identical today: `git diff --stat 1a671be..HEAD -- dataset_doctor_audit` is empty |
 | Scale, same fixture and conditions, code at `b4a8958` (before `130db78`) | 384.1 s and 408.9 s, peak RSS 396 MB | same test, 2026-09-22, A/B pair |
 | Scale, same fixture, one run earlier the same evening | 4 825.8 s - breached the 1 800 s gate and FAILED | `scale_run.log`, 2026-09-22 17:51-19:11; the same fixture and the same commit then ran at 487.7 s, so this number did not reproduce |
 | Raw floor over the same 60 000-file tree, no detector code | read + SHA-256 of every file 21.8 s (0.36 ms/file); PIL decode 0.42 ms/file | `p4_baseline.py`, 2026-09-22 |
