@@ -71,8 +71,14 @@ dev = [
     "types-PyYAML",
 ]
 
-# No [project.urls] yet: a homepage pointing at a repository that does not exist is a
-# broken link in everyone's package index. Add it when the repo is real. See PROJECT_STATE.md.
+# The repository these URLs point at was created on 2026-09-22, which is the precondition the
+# earlier "add them when the repo is real" note asked for. It is public and empty: nothing has been
+# pushed to it yet, so these links resolve to a repository that carries no content until the release
+# push. See docs/adr/0006 and docs/RELEASE_CHECKLIST.md section 3.
+[project.urls]
+Homepage = "https://github.com/xihaian251/dataset-doctor"
+Repository = "https://github.com/xihaian251/dataset-doctor"
+Issues = "https://github.com/xihaian251/dataset-doctor/issues"
 
 [project.scripts]
 dataset-doctor-audit = "dataset_doctor_audit.cli:main"

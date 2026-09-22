@@ -45,6 +45,9 @@ called Dataset Doctor in prose.
   spdx identifier is in `pyproject.toml`. No `[[project.license-files]]` oddity, no CLA.
 - The tool still never writes a licence into a dataset. DD020 reports what the config declares and
   stops there; a missing licence is a `LOW`/`INFO` finding, never an automated edit.
-- No `[project.urls]` yet: a homepage pointing at a repository that does not exist is a broken
-  link in every package index. Add it, the CI workflow and the PyPI publish job when the real
-  repository exists (PROJECT_STATE section 10).
+- No `[project.urls]` was added at the time: a homepage pointing at a repository that does not exist
+  is a broken link in every package index. The condition has since been met — `[project.urls]`
+  (`Homepage`, `Repository`, `Issues`) were added on 2026-09-22 pointing at
+  `github.com/xihaian251/dataset-doctor`, the repository created that day, and the `LICENSE`
+  copyright line was given its named holder. The CI workflow ran for the first time only after a
+  push, and the PyPI publish job is still open (PROJECT_STATE section 10).

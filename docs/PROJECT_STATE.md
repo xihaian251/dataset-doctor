@@ -22,8 +22,8 @@ threshold, a rule id, or a claim in the README.
 | Fixtures | 13 in `examples/`, each with `PLANTED_FAULTS.md`; `examples/RESULTS.md` regenerates via `python examples/build.py` |
 | Tests | 154 test functions / 243 collected items: 213 passed, 30 skipped, 1 warning in 74.66 s (2026-09-22 re-run after `aac77c1`, Python 3.13.1, numpy 2.5.3, pandas 3.0.6, `pytest -o addopts="--tb=line -q"`; the run before it measured 86.99 s on the same command, so read ±15 s as machine load, not progress). Every skip is intentional: the opt-in scale test, plus parametrised documentation checks for rules that make no V0.1 or modality claim |
 | Gates (2026-09-22) | `ruff format --check .` "103 files already formatted" · `ruff check .` "All checks passed!" · `mypy dataset_doctor_audit` "no issues found in 32 source files" · `pytest` green with the scale test skipped. mypy is green **only** with `numpy<2.5` installed: numpy 2.5.x vendors PEP 695 `type` statements that mypy 2.3.1 cannot parse while `python_version = "3.11"`, and the run aborts before it reaches our files. The CI static job installs that ceiling; a local `pip install -e ".[dev]"` still gets numpy 2.5.3, so run the type gate with the same ceiling until upstream resolves it |
-| Release engineering | `.github/workflows/ci.yml`, issue/PR templates and `docs/RELEASE_CHECKLIST.md` are written but **unexecuted** - there is no remote, so CI has never been green anywhere except locally |
-| Not done | PyPI upload (no `[project.urls]` until a real repository exists), hosting, tag |
+| Release engineering | `.github/workflows/ci.yml`, issue/PR templates and `docs/RELEASE_CHECKLIST.md` are written but **unexecuted** - the remote now exists (created 2026-09-22) but holds no commits, so CI has never been green anywhere except locally |
+| Not done | push to `origin`, PyPI upload, signed tag. `[project.urls]` are no longer on this list: they were added 2026-09-22 pointing at the new repository, which is public and still empty |
 
 V0.1 rule set (`rules.py::V01_RULES`) is `V01_RULES = {DD001, DD002, DD003, DD005, DD009, DD011,
 DD012, DD014, DD016, DD018, DD019}` - the leakage-critical surface named by spec section 69. It is
@@ -259,7 +259,7 @@ corrected: the same pre-fix code that reads 396.5 s here in `Documents` measured
 | Rules whose document quotes a detector | 21/21 verified to be the function `audit.DETECTORS` wires | `test_docs_contract.py`, 2026-09-22 |
 | `--fingerprint metadata` coverage cost | image fixture loses {DD003, DD004, DD009, DD016, DD017}; tabular fixture loses {DD003} | `test_docs_contract.py` (set equality), 2026-09-22 |
 | `--fingerprint sampled --sample 0.1` coverage cost | no rule lost on either shipped fixture | same test, 2026-09-22 |
-| CI workflow executions | 0 - `.github/workflows/ci.yml` is committed but there is no remote to run it on | `git remote -v` is empty, 2026-09-22 |
+| CI workflow executions | 0 - `.github/workflows/ci.yml` is committed and the remote now exists, but the remote holds no commits, so no workflow can be triggered | `git remote -v` lists `origin`; GitHub reports 0 branches / 0 tags / 0 releases for it, 2026-09-22 |
 
 Runtime is now dominated by the documentation-contract file: it re-audits every example fixture to
 check `RESULTS.md`, and it is the reason the suite takes about a minute instead of seconds.
@@ -304,9 +304,12 @@ identifier, and DD018/DD019 measure nothing without a baseline - `NOT_RUN` is no
 3. ~~Real repository~~ Done 2026-09-22: `git init -b main` and one root commit carrying all 481
    tracked files, after a `.gitignore` for caches, `dist/`, and the per-dataset
    `.dataset-doctor/` workdir. The suite was re-run against the committed tree (133 passed,
-   1 deselected; `ruff format --check`, `ruff check`, `mypy` clean). **Still open and deliberately
-   not done**: hosting and release - remote setup, `[project.urls]`, a signed tag, and a PyPI
-   publish under the distribution name `dataset-doctor-audit`. Those are irreversible or
+   1 deselected; `ruff format --check`, `ruff check`, `mypy` clean). ~~Hosting setup~~ Also done
+   2026-09-22: `github.com/xihaian251/dataset-doctor` created public and empty, set as `origin`,
+   `[project.urls]` filled in, and `LICENSE`'s copyright line given its named holder (`冯硕`).
+   **Still open and deliberately not done**: the push itself, a signed tag, and a PyPI publish
+   under the distribution name `dataset-doctor-audit` - plus enabling private vulnerability
+   reporting, which cannot be checked while the remote has no commits. Those are irreversible or
    shared-state, so they wait for the maintainer's explicit go-ahead, and the name-collision note
    in the README should have a human's eyes on it before anything is published.
 4. ~~Release engineering artefacts~~ Written 2026-09-22, **never executed**: `.github/workflows/ci.yml`

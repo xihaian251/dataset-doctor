@@ -37,8 +37,9 @@ newest numpy.
 All four must be clean. `.github/workflows/ci.yml` runs them as: format/lint/types on 3.12,
 `pytest` on 3.11, 3.12 and 3.13 on both Ubuntu and Windows, and `python -m build` plus one
 audit executed through the installed wheel on 3.12. The workflow file is prepared but has
-never run - there is no remote yet, so CI green is something the first push will have to
-prove, not a claim you can make here. The 48 000-file scale test is skipped by every one of
+never run - the remote exists but has no commits on it yet, so CI green is something the
+first push will have to prove, not a claim you can make here. The 48 000-file scale test is
+skipped by every one of
 those runs (`tests/test_scale.py` enables it only when `DATASET_DOCTOR_SCALE=1`) because its
 value is a memory measurement, not a regression gate.
 

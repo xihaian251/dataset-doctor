@@ -65,14 +65,29 @@ release dataset. Exclude `.dataset-doctor/` when publishing the data itself.
 
 ## Reporting a vulnerability
 
-Once the repository is public, use GitHub's **Report a vulnerability** form on the Security
-tab: it reaches the maintainers privately and keeps the exploit out of a public issue. Until
-that form exists, open an issue containing only what is safe to publish - the rule id, the
-severity, the fact that a value or a path leaked - and ask for a private channel in it.
+Report privately at the repository's security page,
+**<https://github.com/xihaian251/dataset-doctor/security>**, using GitHub's **Report a vulnerability**
+form there. It reaches the maintainer directly and keeps the exploit out of a public issue.
 
-There is no disclosure timeline, no CVE numbering authority relationship and no security team
-yet. That is stated rather than invented; `docs/RELEASE_CHECKLIST.md` carries the step that
-enables private reporting.
+**Do not disclose an unfixed vulnerability through a public issue**, and do not describe it in a pull
+request, a discussion or a commit message first. This is not the ordinary "please search for existing
+issues first" advice: the realistic attack path for this tool is a hostile dataset handed to somebody
+else's audit run, so even a precise rule id plus the words "this crashes" tells an attacker where to
+look. If you are unsure whether what you found is a vulnerability, file it in the private form and say
+you are unsure - judging that is the maintainer's job, not a reason to post publicly.
+
+**If that form is not on the page, private vulnerability reporting is not enabled for this repository
+yet.** GitHub only shows it once a repository administrator turns it on under
+Settings → Code security and compliance → **Private vulnerability reporting**. This document does not
+claim that has happened: the repository was created on 2026-09-22 and nothing has been pushed to it,
+so the setting has not been verified either way. Enabling it and re-checking this page is a step in
+`docs/RELEASE_CHECKLIST.md` section 3.
+
+Until that form is live there is **no private channel**, and there is deliberately no contact address
+written here. We would rather state a gap than publish an email nobody has agreed to monitor.
+
+There is no disclosure timeline, no CVE numbering authority relationship and no security team yet.
+That is stated rather than invented.
 
 ## Non-goals
 

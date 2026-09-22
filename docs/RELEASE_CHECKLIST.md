@@ -80,16 +80,23 @@ Then record what was actually measured, in this order:
 
 ## 3. Decisions that must be made, not assumed
 
-- [ ] **Copyright holder.** `LICENSE` currently reads `Copyright 2026 Dataset Doctor
-      contributors`, which is a placeholder in the legal sense. Name the person or entity
-      before publishing, or drop the line if the licence text without it is the intent.
-- [ ] **`[project.urls]`.** Absent on purpose: a homepage pointing at a repository that does
-      not exist is a broken link in the package index. Add `Homepage`, `Repository`, `Issues`
-      and `Changelog` the moment the remote exists, in the same commit that records the URL.
-- [ ] **Contact for security reports.** `SECURITY.md` points at GitHub's private vulnerability
-      reporting, which only exists once the repository does; enable it in
-      Settings → Security, and only then fill in a contact route if private reporting is not
-      what you want.
+- [x] **Copyright holder.** Resolved 2026-09-22. `LICENSE` now reads `Copyright 2026 冯硕`, the named
+      holder, replacing the `Dataset Doctor contributors` placeholder; the Apache-2.0 licence text
+      around it is unmodified. One thing was *not* changed and needs a person: `pyproject.toml`'s
+      `authors` still carries the collective label `Dataset Doctor contributors`. That is a credit
+      line rather than a copyright assertion, so it does not contradict the licence, but whether the
+      published metadata should name the holder too is the maintainer's call, not a docs edit's.
+- [x] **`[project.urls]`.** Added 2026-09-22: `Homepage`, `Repository` and `Issues` point at
+      `github.com/xihaian251/dataset-doctor`, the public repository created that day. Deliberately no
+      `Changelog` key — a changelog URL wants a release tag or a published page, and neither exists
+      before the first push. These links resolve to an *empty* repository until section 4 runs.
+- [ ] **Private vulnerability reporting.** Still open, and not assumed done. `SECURITY.md` names the
+      security page and states plainly that the **Report a vulnerability** form only appears once a
+      repository administrator turns on Settings → Code security and compliance → **Private
+      vulnerability reporting**. Nobody has checked whether it is on, because nothing has been pushed
+      and an empty repository has no Security tab to read. Verify it after the first push. There is no
+      contact address to substitute and none was invented; until the form is live this project has no
+      private intake channel, which `SECURITY.md` now says out loud.
 - [ ] **Version number.** `0.1.0` for a first public release is a claim that the V0.1 rule set
       is complete, which PROJECT_STATE supports; `0.1.0b0` is the honest alternative if any
       V0.1 rule still feels provisional. Answered in section 5, not here: publish `0.1.0`, and
@@ -97,7 +104,10 @@ Then record what was actually measured, in this order:
 
 ## 4. Publish (blocked on explicit authorisation)
 
-- [ ] Create the remote repository; push the tagged commit; never force-push a tagged release
+- [ ] ~~Create the remote repository~~ **Done 2026-09-22**: `github.com/xihaian251/dataset-doctor`,
+      public, created empty (no README/.gitignore/LICENSE/initial commit, because the history is
+      local), and configured as `origin`. Nothing has been pushed. Remaining: push the tagged commit;
+      never force-push a tagged release
 - [ ] `twine upload --repository testpypi dist/*` first, install from TestPyPI once, then upload to PyPI
 - [ ] Create the GitHub release from the signed tag with the `CHANGELOG.md` section as notes
 - [ ] Confirm the README install snippet and the CI workflow's `--ci` example both work from the published artefact

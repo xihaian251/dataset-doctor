@@ -33,7 +33,8 @@ Everything between 0.1.0 and here is verification, not behaviour: no rule id, de
   `AuditStatus.FAIL` + `FormalImpact.BLOCKING`, DD010 separates unlabelled rows by which side of
   the evaluation boundary they sit on, DD015/DD021 pin their own rule ids and their `UNSUPPORTED`
   branch ("we did not look" can no longer be read as "we looked and it is fine").
-- Release engineering, **written but never executed** (there is no remote yet):
+- Release engineering, **written but never executed** (written while there was no remote; the remote
+  exists now and carries no commits, so nothing in this bullet has run either):
   `.github/workflows/ci.yml` - static gates on 3.12, `pytest` on 3.11/3.12/3.13 across Ubuntu and
   Windows with the scale test held off, and `python -m build` followed by an audit run through the
   installed wheel; no publish step, no package-index upload, no tag trigger. Plus
@@ -55,6 +56,23 @@ Everything between 0.1.0 and here is verification, not behaviour: no rule id, de
   report schema or persisted-cache format changed, and the on-disk state that survives between
   runs (manifests, snapshots) stores only `schema_version`, so no user cache is invalidated. Every
   quoted CLI invocation in the rule documents and the README was re-measured afterwards.
+- **Publication metadata now states who owns the project and where it lives.** No behaviour change:
+  no detector, rule, threshold, CLI surface or dependency moved. `LICENSE`'s appendix line reads
+  `Copyright 2026 冯硕` in place of the `Dataset Doctor contributors` placeholder, with the Apache-2.0
+  licence text itself untouched. `pyproject.toml` gains `[project.urls]` (`Homepage`, `Repository`,
+  `Issues`) pointing at `github.com/xihaian251/dataset-doctor`, the public repository created
+  2026-09-22 and configured as `origin`; `name`, `version`, `requires-python` and the dependency
+  ranges are unchanged, so the three installed namespaces stay `dataset-doctor-audit` /
+  `dataset_doctor_audit` / `dataset-doctor-audit` while the brand-level artifacts
+  (`dataset-doctor.yaml`, `.dataset-doctor/`, `dataset-doctor-report/`) keep the short name.
+  `SECURITY.md`'s reporting section now names that repository's security page, states that an unfixed
+  vulnerability must not be disclosed through a public issue, and says plainly that private
+  vulnerability reporting is **not** claimed to be enabled — it needs a repository administrator to
+  turn it on, and the setting cannot be read while the remote holds no commits. No contact address was
+  invented to paper over that gap; until the form is live there is no private intake channel, and the
+  document now says so. One item was deliberately left alone: `pyproject.toml`'s `authors` still
+  carries the collective label, which is a credit line rather than a copyright assertion, and
+  `docs/RELEASE_CHECKLIST.md` section 3 registers it as a maintainer decision.
 
 ### Fixed
 
