@@ -65,9 +65,14 @@ release dataset. Exclude `.dataset-doctor/` when publishing the data itself.
 
 ## Reporting a vulnerability
 
-Open a private fork or contact the maintainers listed in `pyproject.toml`; do not file a public
-issue with a working exploit. There is no formal disclosure timeline yet, because there is no
-release process or security team yet - that gap is stated rather than invented.
+Once the repository is public, use GitHub's **Report a vulnerability** form on the Security
+tab: it reaches the maintainers privately and keeps the exploit out of a public issue. Until
+that form exists, open an issue containing only what is safe to publish - the rule id, the
+severity, the fact that a value or a path leaked - and ask for a private channel in it.
+
+There is no disclosure timeline, no CVE numbering authority relationship and no security team
+yet. That is stated rather than invented; `docs/RELEASE_CHECKLIST.md` carries the step that
+enables private reporting.
 
 ## Non-goals
 

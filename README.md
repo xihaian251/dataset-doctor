@@ -121,7 +121,7 @@ dataset-doctor audit ./dataset -o ./report
 The original data is opened read-only throughout; the only thing ever written outside
 `-o` is the hash cache under `./dataset/.dataset-doctor/`.
 
-A typical finding, from the Markdown report:
+A typical finding, from the `report.md` that the demo's `leaky_tabular` fixture writes:
 
 ```markdown
 ### DD003-0001 - Cross-split exact duplicates: test / train
@@ -236,10 +236,12 @@ size, content hash, split, label and perceptual hash where applicable. Two datas
 the same `manifest_hash` have the same samples, splits and labels - which is what lets a
 published number be tied back to the bytes that produced it.
 
-Three modes trade coverage for time: `full` (hash every byte, decode every image),
-`metadata` (no pixel or content access - integrity and duplicate rules then report as
-*not run*, not as PASS), and `sampled` (`--sample 0.1`, with the fraction recorded in the
-report).
+Three modes trade coverage for time. `full` hashes every byte and decodes every image.
+`metadata` reads no pixels and no content, and on the shipped fixtures that costs exactly
+DD003, DD004, DD009, DD016 and DD017 on an image dataset and DD003 alone on a table -
+those rules then report *not run*, never as PASS. `sampled` (`--sample 0.1`, with the
+fraction recorded in the report) costs no rule coverage on the shipped fixtures: the
+hashing is partial, but every rule still reaches a verdict.
 
 ## Dataset Diff
 
@@ -287,6 +289,12 @@ Exit codes: `0` pass · `1` blocking findings · `2` configuration, usage or I/O
 `--strict` is deliberately a *superset* of `--ci`: a gate you tighten by asking for more
 caution can never end up looser than the gate you started with.
 
+The workflow below is the shape for **your** repository. This project's own gates live in
+[.github/workflows/ci.yml](.github/workflows/ci.yml) - format/lint/types, the suite on three
+Python versions across Ubuntu and Windows, and a wheel built and then audited through its
+installed `dataset-doctor` entry point. It has no publish step, no upload to a package index
+and no tag trigger.
+
 ```yaml
 # .github/workflows/dataset.yml
 - run: pip install -e ".[image,excel]"
@@ -308,6 +316,8 @@ caution can never end up looser than the gate you started with.
   disagreement)
 - [docs/PROJECT_STATE.md](docs/PROJECT_STATE.md) - what is implemented, what is measured,
   what is known to be wrong
+- [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) - what has to be reproduced, decided
+  and confirmed before a release, and which of those steps are still open
 
 ## Limitations
 

@@ -20,17 +20,20 @@ threshold, a rule id, or a claim in the README.
 | Commands | `audit`, `scan`, `init`, `split`, `snapshot`, `diff`, `fingerprint`, `report`, `rules`, `show`, `demo` |
 | Exit codes | 0 ok · 1 findings gate · 2 usage/input error · 3 internal error · 130 on Ctrl+C |
 | Fixtures | 13 in `examples/`, each with `PLANTED_FAULTS.md`; `examples/RESULTS.md` regenerates via `python examples/build.py` |
-| Tests | 126 test functions / 134 collected items, 0 failures, 0 skips (2026-09-22 run; the earlier openpyxl-gated item now runs) |
-| Gates (2026-09-21) | `ruff format` clean · `ruff check` "All checks passed!" · `mypy dataset_doctor` "no issues found in 32 source files" · `pytest -q --deselect tests/test_scale.py` green |
-| Not done | PyPI upload (no `[project.urls]` until a real repository exists), git history |
+| Tests | 153 test functions / 242 collected items: 212 passed, 30 skipped in 56 s (2026-09-22, Python 3.13.1). Every skip is intentional: the opt-in scale test, plus parametrised documentation checks for rules that make no V0.1 or modality claim |
+| Gates (2026-09-22) | `ruff format --check .` "103 files already formatted" · `ruff check .` "All checks passed!" · `mypy dataset_doctor` "no issues found in 32 source files" · `pytest` green with the scale test skipped |
+| Release engineering | `.github/workflows/ci.yml`, issue/PR templates and `docs/RELEASE_CHECKLIST.md` are written but **unexecuted** - there is no remote, so CI has never been green anywhere except locally |
+| Not done | PyPI upload (no `[project.urls]` until a real repository exists), hosting, tag |
 
-V0.1 rule set (`rules.py:25`) is `V01_RULES = {DD001, DD002, DD003, DD005, DD009, DD011, DD012,
-DD014, DD016, DD018, DD019}` - the leakage-critical surface named by spec section 69. It is not a
-CLI switch: the verdict function (`rules.py:449-455`) uses it so that an `INCONCLUSIVE` or
-`UNSUPPORTED` outcome on one of those rules *in a gating category for this dataset type* keeps the
-verdict from being printed `SAFE`. "Leakage-first" is therefore enforced in code, not just in the
-README. The remaining ten rules are implemented and run by default; `NOT_RUN` deliberately stays
-out of that gate (it encodes an off-switch, not a blocked measurement).
+V0.1 rule set (`rules.py::V01_RULES`) is `V01_RULES = {DD001, DD002, DD003, DD005, DD009, DD011,
+DD012, DD014, DD016, DD018, DD019}` - the leakage-critical surface named by spec section 69. It is
+not a CLI switch: `rules.py::eval_safety` uses it so that an `INCONCLUSIVE` or `UNSUPPORTED`
+outcome on one of those rules *in a gating category for this dataset type* keeps the verdict from
+being printed `SAFE`. "Leakage-first" is therefore enforced in code, not just in the README. The
+remaining ten rules are implemented and run by default; `NOT_RUN` deliberately stays out of that
+gate (it encodes an off-switch, not a blocked measurement). DD004, DD006 and DD007 are absent from
+the set although they are leakage rules - A20 records why. Source line numbers are not cited here
+or in the rule documents for the same reason the docs-contract test rejects them: they move.
 
 ## 2. The two decisions everything else follows from
 
@@ -79,6 +82,10 @@ Each entry: what was ambiguous, the reading chosen, why, and how much it matters
 | A17 | DD021 scanning several splits with the same column | `seen` set ⇒ one finding per `(column, pattern)`, attributed to the first split alphabetically; ratio is per split | Medium - `4 of 180` is not `4 of 240` |
 | A18 | Near-duplicate Hamming threshold is dataset-dependent (spec section 153) | Kept configurable at 6, published as a Limitation verbatim | Low |
 | A19 | Zero-variance columns in shift metrics \|SMD\| | Emitted as `inf` / `null` rather than clamped, and DD017's doc shows the measured pair | Medium - a clamped 0.0 would hide a degenerate column |
+| A20 | `V01_RULES` omits DD004, DD006 and DD007 although all three sit in a gating category | The spec section 69 list is kept verbatim - it is the spec's ranking, not ours to re-make. Consequence, measured: an `INCONCLUSIVE` near-duplicate check (no `imagehash`) or an undeclared temporal column cannot block a `SAFE` verdict, while an `INCONCLUSIVE` DD003 can. `--strict` is the escape hatch: it fails on **any** inconclusive rule, V0.1 set or not | **High** - this is where "leakage-first" has a boundary, and a reader who assumes it does not will over-trust a `SAFE` |
+| A21 | Does `NOT_RUN` belong in `core_gaps` alongside `INCONCLUSIVE` and `UNSUPPORTED`? | No. Here `NOT_RUN` encodes a deliberate off-switch (policy disabled, optional column never declared), not a blocked measurement; gating on it would leave most image datasets permanently `INCONCLUSIVE`. `--strict` does not add it either, by the same reasoning | Medium - it is the difference between a gate that complains about configuration and one that measures data |
+| A22 | "Heuristic rules carry `LOW` confidence" | Not uniform, and now checked per rule instead of assumed: DD004 caps at `MEDIUM` (a pHash collision is arithmetic about pixels even though the threshold is a judgement), DD008 is `MEDIUM` for an identifier-named column and `LOW` for plain high cardinality, DD007's candidate layer and DD021 are `LOW`. Each rule document must state its own confidence, and `test_docs_contract.py` enforces that | Medium - the blanket version of the rule would misreport how much of each finding is arithmetic |
+| A23 | Should distribution shift fail a CI gate? | It must not change the *verdict*: DD012/DD013 are `POTENTIAL`, so shift moves `SAFE`→`RISKY` and never to `INVALID` (measured on `examples/shifted_tabular`). It does move `--ci`, because that gate is defined as "verdict is not `FORMAL_EVAL_SAFE`" - a separate, opt-in decision about how strict a merge gate is. Whether a harder benchmark invalidates *your* evaluation stays a task question | **High** for adoption - the gap between "risky" and "invalid" is the whole pitch |
 
 ## 4. Defects found while writing the docs (all fixed, all with tests)
 
@@ -93,7 +100,9 @@ Each entry: what was ambiguous, the reading chosen, why, and how much it matters
    test_the_audit_baseline_finding_names_rows_a_reviewer_can_open`.
 
 Pattern worth remembering: each of these was invisible in the code and obvious in a *rendered
-report*. Documentation runs are a test surface - keep writing them per release.
+report*. Documentation runs are a test surface - keep writing them per release. Since 2026-09-22
+that is not a suggestion: `tests/test_docs_contract.py` re-measures the documents, and it found two
+more stale claims the same way (section 6, last paragraph).
 
 ## 5. Spec TEST 1-37 coverage
 
@@ -140,10 +149,16 @@ reviewer can jump straight to it.
 | 36 | mypy passes | gate command |
 | 37 | pytest passes | gate command |
 
-Beyond the spec list: `test_discovery.py` (12 tests for the layout heuristics),
+Beyond the spec list: `test_discovery.py` (11 tests for the layout heuristics),
 `test_splitting.py` (12 for group-aware splitting and its refusal to touch existing data),
-`test_examples.py` (8 asserting each fixture trips exactly its planted fault), and 6 more diff
-tests (rename pairing, mode refusal, unaudited side).
+`test_examples.py` (9 asserting each fixture trips exactly its planted fault, plus that
+`examples/build.py` still reproduces the whole collection), 6 more diff tests (rename pairing,
+mode refusal, the unaudited side), `test_privacy.py` (4 tests / 6 items), `test_packaging.py` (4) and
+`test_docs_contract.py` - 12 checks that expand to 94 items because most of them run once per
+rule. That last file is the one that keeps the prose honest: the front table of every
+`docs/rules/*.md`, the detector wiring, the V0.1 claim, the README's demo block and quoted
+finding, `examples/RESULTS.md` and the fingerprint-mode coverage claims are each compared with
+the code or a live run. It adds no number to the TEST register above; it audits the documents.
 
 ## 6. Coverage gaps - closed 2026-09-22
 
@@ -171,8 +186,19 @@ partially covered DD021 now have named assertions:
 * imagehash absence - `::test_dd004_without_imagehash_is_inconclusive_and_the_rest_still_runs`
   (DD004 INCONCLUSIVE "not a PASS", DD003 control still fires).
 * `examples/build.py` - `test_examples.py::test_the_example_build_script_still_produces_the_whole_collection`
-  (builder runs to a temp dir and reproduces exactly the committed fixture set; `--audit` freshness
-  is still a manual step before release).
+  (builder runs to a temp dir and reproduces exactly the committed fixture set). Freshness is no
+  longer a manual step either: `test_docs_contract.py` re-derives `RESULTS.md` by auditing every
+  fixture and byte-compares the text, so a drifted file fails `pytest`; `python examples/build.py
+  --audit` is the command that rewrites it.
+
+**And the documentation itself, on 2026-09-22:** `tests/test_docs_contract.py` (12 checks / 94
+items). It found two stale claims in the README and both were rewritten from measured output, not
+from an earlier document: the distribution-shift block quoted a finding format that no longer
+renders (the live `examples/shifted_tabular` audit now replaces it), and the fingerprint paragraph
+implied `metadata` costs only "integrity and duplicate rules" and that `sampled` trades coverage -
+measured, `metadata` costs {DD003, DD004, DD009, DD016, DD017} on an image fixture and {DD003} on a
+tabular one, while `sampled` at 0.1 costs no rule coverage on the shipped fixtures. It also removed
+`(line NNN)` citations from two rule documents, which cannot be checked and rot silently.
 
 Still open, deliberately: the detector-error fallback branch in `_execute` (last `except Exception`)
 is only exercised indirectly; and DD017's 0.5/1.5 floors remain hard-coded (A10 unchanged).
@@ -188,16 +214,21 @@ the column then reads as 2-of-2. Fillers in PII fixtures must be real strings (`
 | `dataset-doctor demo` leaky_tabular | 316 findings, `FORMAL_EVAL_INVALID` (DD003 12 · DD005 66 · DD007 316) | demo run log, 2026-09-21 |
 | `dataset-doctor demo` clean_tabular | 300 findings, `SAFE` - the false-positive control | demo run log, 2026-09-21 |
 | `dataset-doctor demo` leaky_images | 146 findings, `INVALID` | demo run log, 2026-09-21 |
-| `examples/` fixtures (13, incl. 6 `unsafe_*`) | per-fixture verdicts and counts | `examples/RESULTS.md`, regenerate with `python examples/build.py` |
+| `examples/` fixtures (13, incl. 6 `unsafe_*`) | per-fixture verdicts and counts | `examples/RESULTS.md`, regenerate with `python examples/build.py --audit` |
 | Single audit wall time (fixture-scale) | 1 883 ms | audit run log, 2026-09-21 |
-
 | Scale: 48 000 image files | cold 315.0 s / warm 320.6 s, peak RSS 344 MB | `tests/test_scale.py` output (TEST 20: 1 passed, 333.33 s total) |
 | Demo leaky image set DD003 | "2 of 100" | `docs/rules/DD003-exact-duplicate.md` |
 | `docs/rules/*.md` examples | every figure transcribed from an in-session run | each doc's Examples section |
+| Rules whose document quotes a detector | 21/21 verified to be the function `audit.DETECTORS` wires | `test_docs_contract.py`, 2026-09-22 |
+| `--fingerprint metadata` coverage cost | image fixture loses {DD003, DD004, DD009, DD016, DD017}; tabular fixture loses {DD003} | `test_docs_contract.py` (set equality), 2026-09-22 |
+| `--fingerprint sampled --sample 0.1` coverage cost | no rule lost on either shipped fixture | same test, 2026-09-22 |
+| CI workflow executions | 0 - `.github/workflows/ci.yml` is committed but there is no remote to run it on | `git remote -v` is empty, 2026-09-22 |
 
-Full-suite runtime is dominated by `test_scale.py`; `pytest -q --deselect tests/test_scale.py`
-finishes in well under a minute, which is why the scale test is the one to re-run deliberately
-before a release.
+Runtime is now dominated by the documentation-contract file: it re-audits every example fixture to
+check `RESULTS.md`, and it is the reason the suite takes about a minute instead of seconds.
+`tests/test_scale.py` no longer needs a `--deselect`: it skips itself unless
+`DATASET_DOCTOR_SCALE=1`, so re-running it deliberately before a release is
+`DATASET_DOCTOR_SCALE=1 PYTHONPATH=. pytest tests/test_scale.py`.
 
 ## 8. Where the spec's prohibitions are enforced
 
@@ -206,7 +237,7 @@ before a release.
 | No single "health score" | verdict is 4-valued + per-finding `formal_impact`; no numeric score exists anywhere in the model |
 | No LLM decides safety | no network/model imports at all - asserted by `test_standalone.py` |
 | No PASS without evidence | `build_finding` requires evidence; `InsufficientEvidence` ⇒ `INCONCLUSIVE`, not `PASS` |
-| No correlation stated as cause | heuristic rules carry `EvidenceType.HEURISTIC` + `Confidence.LOW` (DD007, DD008, DD021) and say so in `why_it_matters` |
+| No correlation stated as cause | the three `HEURISTIC` rules (DD004, DD008, DD021) each state their own confidence in their document - `MEDIUM` capped for DD004, `MEDIUM` for an identifier-named column / `LOW` for plain cardinality in DD008, `LOW` for DD021 - and name a benign explanation in `why_it_matters`; DD007's registered evidence type is `DETERMINISTIC`, and only its candidate findings arrive as `HEURISTIC`/`LOW`. `test_docs_contract.py` enforces both halves (A22) |
 | No deleting / overwriting user data | adapters open read-only; the only writes are `-o` and the hash cache; `split` refuses a non-empty target (`test_splitting.py`) |
 | No auto-removal of near-duplicates | DD004 recommends quarantine, `auto_fix_available: false` |
 | No cloud upload | no network code path; `test_test22` runs the whole audit with the network switched off |
@@ -231,18 +262,25 @@ identifier, and DD018/DD019 measure nothing without a baseline - `NOT_RUN` is no
    the Phase-0 report, which landed 2026-09-22 as `docs/DEEP_RESEARCH_PHASE0.md` (prose companion
    to the COMPETITIVE_ANALYSIS fact table; the fact table wins on any disagreement).
 2. ~~Close the section 6 gaps~~ Done 2026-09-22: all listed rules and modes now have named
-   assertions (section 6 records which); suite went 118 -> 134 collected items, gates green.
+   assertions (section 6 records which), and the documentation became a tested surface too. Suite
+   118 → 134 → 242 collected items; gates green at each step.
 3. ~~Real repository~~ Done 2026-09-22: `git init -b main` and one root commit carrying all 481
    tracked files, after a `.gitignore` for caches, `dist/`, and the per-dataset
    `.dataset-doctor/` workdir. The suite was re-run against the committed tree (133 passed,
    1 deselected; `ruff format --check`, `ruff check`, `mypy` clean). **Still open and deliberately
-   not done**: hosting and release - remote setup, `[project.urls]`, the CI workflow (the YAML
-   snippet is already in README's CI section), a signed tag, and a PyPI publish under the
-   distribution name `dataset-doctor-audit`. Those are irreversible or shared-state, so they
-   wait for the maintainer's explicit go-ahead, and the name-collision note in the README should
-   have a human's eyes on it before anything is published.
-4. Re-run `python examples/build.py` after any detector change; `examples/RESULTS.md` and the
-   doc examples drift silently otherwise.
+   not done**: hosting and release - remote setup, `[project.urls]`, a signed tag, and a PyPI
+   publish under the distribution name `dataset-doctor-audit`. Those are irreversible or
+   shared-state, so they wait for the maintainer's explicit go-ahead, and the name-collision note
+   in the README should have a human's eyes on it before anything is published.
+4. ~~Release engineering artefacts~~ Written 2026-09-22, **never executed**: `.github/workflows/ci.yml`
+   (three jobs: static gates; pytest on 3.11/3.12/3.13 × Ubuntu/Windows with the scale test held
+   off; `python -m build` then an audit run through the installed wheel - no publish step, no
+   upload to an index, no tag trigger), `.github/ISSUE_TEMPLATE/` (`crash`, `wrong-verdict`, plus
+   `ABOUT.md`), `.github/PULL_REQUEST_TEMPLATE.md` and `docs/RELEASE_CHECKLIST.md`. The first push
+   is what will show whether the YAML is right; nothing here can claim that.
+5. `examples/RESULTS.md` no longer drifts silently - `test_docs_contract.py` re-audits every
+   fixture and compares, so step 4 of the old list became a failing test rather than a reminder.
+   Run `python examples/build.py --audit` to rewrite the file after an intended change.
 
 ## 11. Scratch state - disposition
 

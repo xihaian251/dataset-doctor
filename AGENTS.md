@@ -23,7 +23,7 @@ Non-negotiables, in the form the spec requires them (section 157):
 
 ## Before you change anything
 
-1. Read [docs/PROJECT_STATE.md](docs/PROJECT_STATE.md) - ambiguity register (A1-A19), coverage
+1. Read [docs/PROJECT_STATE.md](docs/PROJECT_STATE.md) - ambiguity register (A1-A23), coverage
    gaps, and the defects that documentation runs already caught.
 2. Read [docs/METHODOLOGY.md](docs/METHODOLOGY.md) - which thresholds are policy-wired and which
    are literal in a detector. Do not "harmonise" them silently.
@@ -43,21 +43,26 @@ Non-negotiables, in the form the spec requires them (section 157):
 - Every rule needs a `docs/rules/DDNNN-*.md` page matching `doc_path` in the registry, with
   measured examples, false positives, a severity table and a remediation section that states
   whether that rule reads `enabled`.
-- New heuristic ⇒ `EvidenceType.HEURISTIC` + `Confidence.LOW` + a `why_it_matters` that names the
-  benign explanation. Do not let a heuristic escalate a verdict un-corrected (see DD007's FDR step).
+- New heuristic ⇒ `EvidenceType.HEURISTIC` + a `Confidence` its document states explicitly
+  (`LOW` unless the arithmetic justifies more; existing deviations are registered in
+  `docs/PROJECT_STATE.md` A22) + a `why_it_matters` that names the benign explanation. Do not let
+  a heuristic escalate a verdict un-corrected (see DD007's FDR step).
 - Truncate evidence lists, never the claim: caps go in the doc, `limitations` says what was capped.
 
 ## Commands
 
 ```bash
 pip install -e ".[image,excel]"        # extras: imagehash for DD004, openpyxl for Excel
-PYTHONPATH=. pytest -q                          # TEST 37 (test_scale.py is the slow one)
-PYTHONPATH=. pytest -q --deselect tests/test_scale.py
+PYTHONPATH=. pytest -rA                         # TEST 37 (the scale test skips itself)
+DATASET_DOCTOR_SCALE=1 PYTHONPATH=. pytest tests/test_scale.py   # the 48 000-file run, ~5 min
 ruff format dataset_doctor tests examples && ruff check .   # TEST 35
 mypy dataset_doctor                                         # TEST 36
-python examples/build.py               # regenerate examples/RESULTS.md after any detector change
+python examples/build.py --audit     # regenerate examples/RESULTS.md after any detector change
 PYTHONPATH=. python -c "from dataset_doctor.cli import main; main()" demo ./out
 ```
+
+`pyproject.toml` puts `-q` in pytest's `addopts`, so a typed `-q` becomes `-qq` and prints no
+summary line - use `-rA` if you want the counts and the skip reasons.
 
 Windows note: set `PYTHONIOENCODING=utf-8` before any command that prints Chinese paths or report
 text, and remember that long background jobs here get killed silently - drive long runs
