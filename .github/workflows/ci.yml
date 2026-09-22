@@ -1,0 +1,88 @@
+# The four gates in AGENTS.md, on the three Python versions this tool claims to support, on
+# the two platforms whose path semantics differ. Nothing here publishes: no upload, no
+# deployment, no tag trigger. The build job installs the wheel it just made and runs it, so
+# "the tests pass" and "the artefact someone would install works" are separate results.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONIOENCODING: utf-8
+
+jobs:
+  static:
+    name: Format, lint, types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev]"
+      - run: ruff format --check .
+      - run: ruff check .
+      - run: mypy dataset_doctor
+
+  tests:
+    name: pytest (${{ matrix.os }}, py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.11", "3.12", "3.13"]
+    env:
+      # The 48 000-file scale test is opt-in (tests/test_scale.py enables it only when this
+      # equals exactly "1"), so a PR never pays for it. `-rs` in the pytest step below is
+      # what proves it was skipped on purpose rather than silently absent.
+      DATASET_DOCTOR_SCALE: "0"
+      PYTHONPATH: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m pytest -rA -v
+
+  build:
+    name: Wheel and sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip build
+      - run: python -m build
+      - name: Install the wheel in a clean environment and audit through it
+        # The control fixture has to come out SAFE under --ci, which is the same claim
+        # README makes about it, checked against the artefact instead of the source tree.
+        run: |
+          python -m venv .ci-venv
+          .ci-venv/bin/python -m pip install --quiet --upgrade pip
+          .ci-venv/bin/python -m pip install --quiet dist/*.whl
+          .ci-venv/bin/dataset-doctor --help
+          .ci-venv/bin/dataset-doctor audit examples/safe_tabular --ci -o .ci-report
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dataset-doctor-dists
+          path: dist/
+          retention-days: 14
+          if-no-files-found: error

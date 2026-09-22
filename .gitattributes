@@ -21,3 +21,9 @@
 *.parquet binary
 *.xlsx binary
 *.ico binary
+
+# Extensionless and dotfile text: `text=auto` normalises them on commit but checks them out with
+# the platform's own ending, which is the asymmetry the header of this file exists to remove.
+.gitattributes text eol=lf
+.gitignore text eol=lf
+LICENSE text eol=lf

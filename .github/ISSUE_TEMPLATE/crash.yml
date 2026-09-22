@@ -1,0 +1,41 @@
+name: Crash, hang or unusable output
+description: A traceback, a rule stuck at INCONCLUSIVE, a report that cannot be read
+title: "[crash] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: command
+    attributes:
+      label: The exact command
+      description: Include the path shape you pointed at (directory / single file / split column) and the `dataset-doctor.yaml` if you have one.
+      render: bash
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Traceback, or the output that is wrong
+      description: >
+        Full stderr. For a rule that will not reach a verdict, paste its coverage entry - the
+        `skip_reason` is the part that makes a fix possible.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: data
+    attributes:
+      label: What the data looks like
+      description: >
+        Format(s), size, number of splits, whether labels live in a column or a folder
+        layout, and the one thing about it that is unusual. A file listing is usually enough;
+        the rows are rarely needed and personal or clinical data must not be attached.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Version, OS, Python, extras installed
+      description: "`tool_version` from report.json · OS · `python --version` · whether the `image` and `excel` extras are installed"
+      placeholder: 0.1.0 · Ubuntu 24.04 · 3.11 · image yes, excel no
+    validations:
+      required: true

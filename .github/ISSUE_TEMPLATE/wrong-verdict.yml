@@ -1,0 +1,53 @@
+name: Wrong verdict / false positive
+description: A rule fired when it should not have, or stayed quiet when it should have fired
+title: "[DD___] "
+labels: ["verdict"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Start from the rule id. A finding is a (rule, status, severity, formal impact) tuple -
+        say which of those four is wrong, and what you expected instead.
+  - type: input
+    id: rule
+    attributes:
+      label: Rule id
+      description: e.g. DD005, or `dataset-doctor show --rule DD005` for what the rule claims to do
+      placeholder: DD___
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected, and why
+      description: >
+        The dataset property you believe the rule mis-reads. A benign explanation a human can
+        check is worth more than a description of the symptom.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: The finding as reported
+      description: The block from report.md, or the finding object from report.json. Redact values, keep column names.
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Smallest dataset that reproduces it
+      description: >
+        Rows or files, plus the `dataset-doctor.yaml` and the command. Eight synthetic rows
+        are better than a real 50 000-row set nobody can paste. Never attach personal or
+        clinical data.
+      render: bash
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Version, OS, Python, fingerprint mode
+      placeholder: 0.1.0 · Windows 11 · 3.13 · full
+    validations:
+      required: true
