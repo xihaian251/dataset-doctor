@@ -1,0 +1,23 @@
+# The tool's headline promise is a deterministic fingerprint of a dataset, so the bytes of
+# the checked-in fixtures must not depend on the platform that cloned them. `text=auto`
+# normalises on commit; the explicit eol=lf lines keep a Windows checkout reading the same
+# bytes a Linux checkout does.
+* text=auto
+*.py text eol=lf
+*.md text eol=lf
+*.toml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.csv text eol=lf
+*.tsv text eol=lf
+*.svg text eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.bmp binary
+*.webp binary
+*.parquet binary
+*.xlsx binary
+*.ico binary

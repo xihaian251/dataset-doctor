@@ -1,5 +1,7 @@
 [build-system]
-requires = ["hatchling"]
+# hatchling >= 1.26 is the first release that understands the PEP 639 `license` expression
+# used below; an older backend would silently mis-read it.
+requires = ["hatchling>=1.26"]
 build-backend = "hatchling.build"
 
 [project]
@@ -14,7 +16,7 @@ version = "0.1.0"
 description = "Detect data leakage before it corrupts your ML experiment. Local-first ML dataset reliability and leakage auditing CLI."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
 authors = [{ name = "Dataset Doctor contributors" }]
 keywords = [
     "data-leakage",
@@ -31,7 +33,8 @@ classifiers = [
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Apache Software License",
+    # No `License ::` classifier: with the PEP 639 `license` expression above it is the
+    # deprecated spelling of the same fact, and modern backends reject the pair.
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -75,7 +78,22 @@ dataset-doctor = "dataset_doctor.cli:main"
 packages = ["dataset_doctor"]
 
 [tool.hatch.build.targets.sdist]
-include = ["dataset_doctor", "docs", "examples", "tests", "README.md", "CHANGELOG.md"]
+# An explicit list means exactly that: anything not named is absent from the archive, and
+# Apache-2.0 section 4 requires the licence text to travel with a redistributed work.
+include = [
+    "dataset_doctor",
+    "docs",
+    "examples",
+    "tests",
+    ".github",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    "AGENTS.md",
+    "ROADMAP.md",
+]
 
 [tool.ruff]
 line-length = 120
