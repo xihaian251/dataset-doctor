@@ -216,7 +216,44 @@ the column then reads as 2-of-2. Fillers in PII fixtures must be real strings (`
 | `dataset-doctor-audit demo` leaky_images | 146 findings, `INVALID` | demo run log, 2026-09-21 |
 | `examples/` fixtures (13, incl. 6 `unsafe_*`) | per-fixture verdicts and counts | `examples/RESULTS.md`, regenerate with `python examples/build.py --audit` |
 | Single audit wall time (fixture-scale) | 1 883 ms | audit run log, 2026-09-21 |
-| Scale: 48 000 image files | cold 315.0 s / warm 320.6 s, peak RSS 344 MB | `tests/test_scale.py` output (TEST 20: 1 passed, 333.33 s total) |
+| Scale: 60 000 image samples (50 000 train + 10 000 test), cold hash cache | 487.7 s and 467.8 s, peak RSS 396 MB | `tests/test_scale.py` TEST 20 passed x2, 2026-09-22, HEAD `1a671be`, Windows 11 / Python 3.13.1 / pytest 9.1.1 |
+| Scale, same fixture and conditions, code at `b4a8958` (before `130db78`) | 384.1 s and 408.9 s, peak RSS 396 MB | same test, 2026-09-22, A/B pair |
+| Scale, same fixture, one run earlier the same evening | 4 825.8 s - breached the 1 800 s gate and FAILED | `scale_run.log`, 2026-09-22 17:51-19:11; the same fixture and the same commit then ran at 487.7 s, so this number did not reproduce |
+| Raw floor over the same 60 000-file tree, no detector code | read + SHA-256 of every file 21.8 s (0.36 ms/file); PIL decode 0.42 ms/file | `p4_baseline.py`, 2026-09-22 |
+| Filesystem call cost on that tree | `Path.resolve()` 0.498 ms, `os.stat()` 0.142 ms per path | micro-benchmark, 8 000 paths, 2026-09-22 |
+| ~~Scale: 48 000 image files~~ superseded 2026-09-22 | cold 315.0 s / warm 320.6 s, peak RSS 344 MB | recorded 2026-09-21 from a fixture under `%TEMP%`; see the analysis below for why it is not comparable |
+
+### Scale regression analysis (2026-09-22)
+
+Two separate questions came out of the first gate breach, and they have different answers.
+
+**The 4 825.8 s run is not a code regression.** Identical commit, identical fixture directory,
+identical cold-cache condition re-ran at 487.7 s and 467.8 s minutes later, so the input and the
+program were held constant and only the machine differed. The leading hypothesis is Windows Search
+(`WSearch` is Running) indexing the 72 000 files that had been created two minutes before that run
+started: this fixture lives under `Documents`, which is an indexed library location, while the
+2026-09-21 run that produced the 315 s figure built its fixture under `%TEMP%`. It is labelled a
+hypothesis because it was never reproduced on purpose - what is established is only that the stall
+is environmental and does not reproduce. Consequence for the next person running this: on Windows,
+build the fixture somewhere outside an indexed library, or let indexing settle first. The 1 800 s
+gate did its job either way - a ten-fold stall was reported as a failure, not waved through.
+
+**There is a real, modest, measured regression of about 20%, and it is attributed.** Paired runs on
+the same directory, two per side: `b4a8958` averaged 396.5 s, HEAD averages 477.8 s, so +81.3 s
+(+20.5%) against within-side scatter of 4-6%. Peak RSS is unchanged at 396 MB, so this is CPU and
+syscall time, not memory. The only package change between those commits is `130db78` (keep absolute
+paths out of findings), which routed reported paths through `adapters/base.relative()`; that helper
+calls `self.root.resolve()` and `path.resolve()` for every record, and on this tree a resolve costs
+0.498 ms - about 56 s of the measured 81 s at 60 000 files, which is the mechanism at the right
+magnitude. `130db78` is not being reverted: it closed a real report-sharing leak that SECURITY.md
+had already promised, and the fix is correct. The cheap follow-up is to resolve the root once per
+adapter instead of once per record, which is a performance change and therefore waits until the
+freeze lifts - it is registered in section 10 with this analysis as its justification.
+
+Comparing across days is invalid and is the reason the old figure is struck through rather than
+corrected: the same pre-fix code that reads 396.5 s here in `Documents` measured 315.0 s in
+`%TEMP%`, i.e. about 1 ms/sample of the apparent change is directory, not code.
+
 | Demo leaky image set DD003 | "2 of 100" | `docs/rules/DD003-exact-duplicate.md` |
 | `docs/rules/*.md` examples | every figure transcribed from an in-session run | each doc's Examples section |
 | Rules whose document quotes a detector | 21/21 verified to be the function `audit.DETECTORS` wires | `test_docs_contract.py`, 2026-09-22 |
@@ -281,6 +318,10 @@ identifier, and DD018/DD019 measure nothing without a baseline - `NOT_RUN` is no
 5. `examples/RESULTS.md` no longer drifts silently - `test_docs_contract.py` re-audits every
    fixture and compares, so step 4 of the old list became a failing test rather than a reminder.
    Run `python examples/build.py --audit` to rewrite the file after an intended change.
+6. Deferred by the feature freeze, with its measurement already taken: `adapters/base.relative()`
+   resolves the dataset root for every record, which `tests/test_scale.py` costs about 20% of the
+   60 000-file audit (section 7). Resolving it once per adapter is the fix. It is a performance
+   change with no release necessity, so it waits; the A/B numbers above are its pre-registration.
 
 ## 11. Scratch state - disposition
 

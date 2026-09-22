@@ -80,10 +80,10 @@ def test_test20_every_file_is_accounted_for_and_ram_stays_bounded(large_image_da
     assert result.identity.num_samples == FILES + FILES // 5
     assert sum(result.identity.split_sizes.values()) == result.identity.num_samples
     assert result.identity.class_counts and len(result.identity.class_counts) == CLASSES
+    # Printed before the ceilings, because a run that breaches one is exactly the run
+    # whose numbers the regression analysis needs.
+    print(f"TEST 20 measured: {result.identity.num_samples:,} samples in {elapsed:.1f}s, peak {peak:.0f} MB")
     # 8 GB is the documented host budget; the interpreter, pandas and Pillow sit inside the
     # same number, so this is the user-facing ceiling rather than a claim about the loop.
     assert peak < 8192, f"peak working set {peak:.0f} MB over the documented 8 GB budget"
     assert elapsed < 1800, f"{elapsed:.0f}s for {result.identity.num_samples} samples"
-    # The ceilings above are pass/fail; this is the measurement a README can quote. Run with
-    # `-s` and copy it out rather than re-deriving it somewhere else.
-    print(f"TEST 20 measured: {result.identity.num_samples:,} samples in {elapsed:.1f}s, peak {peak:.0f} MB")
