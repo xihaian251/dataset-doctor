@@ -17,3 +17,6 @@ build/
 # raises ImportError is worse than a stray directory in `git status`.
 /report/
 /reports/
+# What `dataset-doctor audit ./somewhere` writes when no --output is given, so a
+# documentation run in the repository root must never reach a commit.
+/dataset-doctor-report/

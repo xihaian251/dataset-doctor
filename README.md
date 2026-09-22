@@ -215,9 +215,10 @@ Shift is not leakage. `examples/shifted_tabular` has covariate and label shift w
 boundary violation, and it measures as:
 
 ```text
-| FORMAL_EVAL_RISKY  260 samples / 21 rules |
-  - DD012-0001 HIGH WARNING (POTENTIAL) - train vs test (4 column(s))
-  - DD013-0001 HIGH WARNING (POTENTIAL) - train vs test
+| FORMAL_EVAL_RISKY  260 samples / 21 rules                                 |
+| 0 CRITICAL  2 HIGH  0 MEDIUM  1 LOW  1 INFO                               |
+  - DD012 Feature distribution shift: train vs test (4 column(s)): 60 samples, severity HIGH
+  - DD013 Label distribution shift: train vs test: 60 samples, severity HIGH
 ```
 
 `RISKY`, not `INVALID`, and `dataset-doctor audit` exits 0 on it. Whether a shift

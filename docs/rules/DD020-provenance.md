@@ -8,7 +8,7 @@
 | Evidence type | `DETERMINISTIC` |
 | Applies to | the config, not the samples - modality-independent |
 | Requires | nothing; always runs |
-| Detector | `dataset_doctor/detectors/structural.py::detect_provenance` (line 413) |
+| Detector | `dataset_doctor/detectors/structural.py::detect_provenance` |
 | Registry name | `Dataset Provenance` |
 | Policy block | `policies.provenance` |
 | In V0.1 rule set | no (`V01_RULES` covers the leakage-critical surface) |

@@ -9,7 +9,7 @@
 | Confidence | `LOW` |
 | Applies to | tabular only (`requires: ["tabular"]`) |
 | Policy | `policies.pii_scan` - `enabled`, `min_match_ratio` (default `0.05`) |
-| Detector | `dataset_doctor/detectors/structural.py::detect_pii` (line 489) |
+| Detector | `dataset_doctor/detectors/structural.py::detect_pii` |
 | Registry name | `PII Exposure` |
 | In V0.1 rule set | no |
 
