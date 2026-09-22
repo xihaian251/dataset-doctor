@@ -21,10 +21,18 @@ product (ADR 0004).
 
 ```bash
 ruff format . && ruff check .           # CI runs `ruff format --check .`, so format before you push
-mypy dataset_doctor_audit
+mypy dataset_doctor_audit               # needs `pip install "numpy<2.5"`, see the note below
 PYTHONPATH=. pytest -rA                 # ~1 minute; see the summary-line note below
 python examples/build.py --audit        # regenerate examples/RESULTS.md from a live audit
 ```
+
+numpy 2.5.x ships vendored stub files that use PEP 695 `type` statements. mypy cannot parse
+those while `pyproject.toml` keeps `python_version = "3.11"` - the run stops on a syntax error
+in `numpy/__init__.pyi` before it looks at a single file of ours, which reads like a broken
+type gate but is a toolchain conflict. Measured 2026-09-22 with mypy 2.3.1: numpy 2.5.3 aborts,
+numpy 2.4.6 reports "no issues found in 32 source files". The CI static job installs the
+ceiling; nothing about the shipped dependency range narrows, and the test matrix still runs the
+newest numpy.
 
 All four must be clean. `.github/workflows/ci.yml` runs them as: format/lint/types on 3.12,
 `pytest` on 3.11, 3.12 and 3.13 on both Ubuntu and Windows, and `python -m build` plus one
