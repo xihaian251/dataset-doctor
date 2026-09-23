@@ -120,22 +120,22 @@ Then record what was actually measured, in this order:
 
 | Item | Measured value |
 | --- | --- |
-| Commit built | `2590265` (`git status --short` empty *and* `git ls-files --others --exclude-standard` empty at build time) |
+| Commit built | `6cdee51` (`git status --short` empty *and* `git ls-files --others --exclude-standard` empty at build time) |
 | Build | `python -m build` in a throwaway venv holding only `build` + `twine`; backend `hatchling 1.32.4` |
 | Wheel | `dataset_doctor_audit-0.1.0-py3-none-any.whl`, SHA-256 `74234229fb9e6cd83c656e7fd6ddc209084a74ed60c16fa642aff05aede8b54b` |
 | Sdist | `dataset_doctor_audit-0.1.0.tar.gz`, SHA-256 `d22a279358f29fae269bd70917271051c5a64a987b2f7c690c315d8c12354833` |
 | `twine check dist/*` | both `PASSED` |
 | Wheel content | 37 entries: 32 package modules incl. the `reports/` subpackage, `dist-info/` with `METADATA`, `WHEEL`, `RECORD`, `entry_points.txt` (`dataset-doctor-audit = dataset_doctor_audit.cli:main`) and `licenses/LICENSE`. No tests, no `examples/`. No `py.typed` - none is claimed in the classifiers, so its absence is consistent rather than missing |
 | Sdist content | 495 files: 401 `examples/`, 32 `dataset_doctor_audit/`, 32 `docs/`, 15 `tests/`, 5 `.github/`, 10 root (`README.md`, `LICENSE`, `pyproject.toml`, `CHANGELOG.md`, `SECURITY.md`, `CONTRIBUTING.md`, `AGENTS.md`, `ROADMAP.md`, `.gitignore`, `PKG-INFO`). Scanning every text entry: 0 strings identifying this machine or author, 0 scratch or report paths, 2 credential-shaped strings - both canaries in `tests/test_privacy.py` and `tests/test_standalone.py`, which assert that such values are *not* emitted |
-| Artefact equals commit | all 32 wheel modules and all 32 sdist package modules are byte-identical to `git show 2590265:<path>` |
-| Reproducible | the wheel SHA is unchanged across three builds from two commits (`177b431`, `2590265`); the sdist changed only when files it actually ships changed |
+| Artefact equals commit | all 32 wheel modules and all 32 sdist package modules are byte-identical to `git show 6cdee51:<path>` |
+| Reproducible | the wheel SHA is unchanged across three builds from two commits (`27c25f6`, `6cdee51`); the sdist changed only when files it actually ships changed |
 | Clean install, wheel only | throwaway venv, 7/7 checks, `repo on sys.path: False`, bare `dataset_doctor` absent |
 | Clean install, sdist only | throwaway venv built from source, 7/7 checks, `repo on sys.path: False`, bare `dataset_doctor` absent |
 | Static gates at this commit | `ruff format --check .` "103 files already formatted" · `ruff check .` "All checks passed!" · `mypy` "no issues found in 32 source files" (with `numpy 2.4.6`, see section 2) · `pytest` 213 passed, 30 skipped, 1 warning in 74.66 s (86.99 s on the run immediately before it) |
-| Scale gate | 60 000 image samples, 487.7 s and 467.8 s cold, peak RSS 396 MB. Those ran with `dataset_doctor_audit/` byte-identical to today's (`git diff --stat 1a671be..HEAD -- dataset_doctor_audit` is empty); PROJECT_STATE section 7 carries the analysis |
+| Scale gate | 60 000 image samples, 487.7 s and 467.8 s cold, peak RSS 396 MB. Those ran with `dataset_doctor_audit/` byte-identical to today's (`git diff --stat 7542f16..HEAD -- dataset_doctor_audit` is empty); PROJECT_STATE section 7 carries the analysis |
 
 Two earlier builds are void and neither was published. The pair recorded here on 2026-09-22 at
-`919a9e4` (wheel `b9ef247e…`, sdist `ddf603b2…`) carried CRLF copies of the package modules,
+`6195dad` (wheel `b9ef247e…`, sdist `ddf603b2…`) carried CRLF copies of the package modules,
 because the build reads the working tree and some files had drifted to CRLF there while
 `git status` still reported them clean; section 2's byte-identity bullet exists because of that.
 A build made minutes later, while a normalisation attempt was truncating files, shipped
@@ -145,10 +145,10 @@ found only because the wheel's hash had moved without any source change, which i
 byte-identity bullet now makes a routine check instead of a lucky catch. The two rows above are the
 artefacts to upload.
 
-The commit that *records* these hashes is later than `2590265`. It changes documentation only - the
+The commit that *records* these hashes is later than `6cdee51`. It changes documentation only - the
 two files under `docs/` that the sdist ships and the wheel never did - so a rebuild from that head
 differs from the sdist above by exactly those files and nothing else, which `git diff --stat
-2590265..HEAD` shows in one line each; the wheel is unaffected either way. That is not a
+6cdee51..HEAD` shows in one line each; the wheel is unaffected either way. That is not a
 contradiction: the artefacts a human should upload are the ones above. Rebuilding from the head you
 are standing on is equally acceptable and is the recommended last step before `twine upload` - it
 just produces a different sdist SHA-256, which should then replace the row above rather than sit

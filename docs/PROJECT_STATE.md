@@ -20,7 +20,7 @@ threshold, a rule id, or a claim in the README.
 | Commands | `audit`, `scan`, `init`, `split`, `snapshot`, `diff`, `fingerprint`, `report`, `rules`, `show`, `demo` |
 | Exit codes | 0 ok · 1 findings gate · 2 usage/input error · 3 internal error · 130 on Ctrl+C |
 | Fixtures | 13 in `examples/`, each with `PLANTED_FAULTS.md`; `examples/RESULTS.md` regenerates via `python examples/build.py` |
-| Tests | 154 test functions / 243 collected items: 213 passed, 30 skipped, 1 warning in 74.66 s (2026-09-22 re-run after `aac77c1`, Python 3.13.1, numpy 2.5.3, pandas 3.0.6, `pytest -o addopts="--tb=line -q"`; the run before it measured 86.99 s on the same command, so read ±15 s as machine load, not progress). Every skip is intentional: the opt-in scale test, plus parametrised documentation checks for rules that make no V0.1 or modality claim |
+| Tests | 154 test functions / 243 collected items: 213 passed, 30 skipped, 1 warning in 74.66 s (2026-09-22 re-run after `29beb75`, Python 3.13.1, numpy 2.5.3, pandas 3.0.6, `pytest -o addopts="--tb=line -q"`; the run before it measured 86.99 s on the same command, so read ±15 s as machine load, not progress). Every skip is intentional: the opt-in scale test, plus parametrised documentation checks for rules that make no V0.1 or modality claim |
 | Gates (2026-09-22) | `ruff format --check .` "103 files already formatted" · `ruff check .` "All checks passed!" · `mypy dataset_doctor_audit` "no issues found in 32 source files" · `pytest` green with the scale test skipped. mypy is green **only** with `numpy<2.5` installed: numpy 2.5.x vendors PEP 695 `type` statements that mypy 2.3.1 cannot parse while `python_version = "3.11"`, and the run aborts before it reaches our files. The CI static job installs that ceiling; a local `pip install -e ".[dev]"` still gets numpy 2.5.3, so run the type gate with the same ceiling until upstream resolves it |
 | Release engineering | `.github/workflows/ci.yml`, issue/PR templates and `docs/RELEASE_CHECKLIST.md` are written but **unexecuted** - the remote now exists (created 2026-09-22) but holds no commits, so CI has never been green anywhere except locally |
 | Not done | push to `origin`, PyPI upload, signed tag. `[project.urls]` are no longer on this list: they were added 2026-09-22 pointing at the new repository, which is public and still empty |
@@ -216,8 +216,8 @@ the column then reads as 2-of-2. Fillers in PII fixtures must be real strings (`
 | `dataset-doctor-audit demo` leaky_images | 146 findings, `INVALID` | demo run log, 2026-09-21 |
 | `examples/` fixtures (13, incl. 6 `unsafe_*`) | per-fixture verdicts and counts | `examples/RESULTS.md`, regenerate with `python examples/build.py --audit` |
 | Single audit wall time (fixture-scale) | 1 883 ms | audit run log, 2026-09-21 |
-| Scale: 60 000 image samples (50 000 train + 10 000 test), cold hash cache | 487.7 s and 467.8 s, peak RSS 396 MB | `tests/test_scale.py` TEST 20 passed x2, 2026-09-22, HEAD `1a671be` with the print statement moved above the ceilings (committed as `47f208e`), Windows 11 / Python 3.13.1 / pytest 9.1.1. `dataset_doctor_audit/` is byte-identical today: `git diff --stat 1a671be..HEAD -- dataset_doctor_audit` is empty |
-| Scale, same fixture and conditions, code at `b4a8958` (before `130db78`) | 384.1 s and 408.9 s, peak RSS 396 MB | same test, 2026-09-22, A/B pair |
+| Scale: 60 000 image samples (50 000 train + 10 000 test), cold hash cache | 487.7 s and 467.8 s, peak RSS 396 MB | `tests/test_scale.py` TEST 20 passed x2, 2026-09-22, HEAD `7542f16` with the print statement moved above the ceilings (committed as `09021c8`), Windows 11 / Python 3.13.1 / pytest 9.1.1. `dataset_doctor_audit/` is byte-identical today: `git diff --stat 7542f16..HEAD -- dataset_doctor_audit` is empty |
+| Scale, same fixture and conditions, code at `88eb253` (before `94ca1e1`) | 384.1 s and 408.9 s, peak RSS 396 MB | same test, 2026-09-22, A/B pair |
 | Scale, same fixture, one run earlier the same evening | 4 825.8 s - breached the 1 800 s gate and FAILED | `scale_run.log`, 2026-09-22 17:51-19:11; the same fixture and the same commit then ran at 487.7 s, so this number did not reproduce |
 | Raw floor over the same 60 000-file tree, no detector code | read + SHA-256 of every file 21.8 s (0.36 ms/file); PIL decode 0.42 ms/file | `p4_baseline.py`, 2026-09-22 |
 | Filesystem call cost on that tree | `Path.resolve()` 0.498 ms, `os.stat()` 0.142 ms per path | micro-benchmark, 8 000 paths, 2026-09-22 |
@@ -239,13 +239,13 @@ build the fixture somewhere outside an indexed library, or let indexing settle f
 gate did its job either way - a ten-fold stall was reported as a failure, not waved through.
 
 **There is a real, modest, measured regression of about 20%, and it is attributed.** Paired runs on
-the same directory, two per side: `b4a8958` averaged 396.5 s, HEAD averages 477.8 s, so +81.3 s
+the same directory, two per side: `88eb253` averaged 396.5 s, HEAD averages 477.8 s, so +81.3 s
 (+20.5%) against within-side scatter of 4-6%. Peak RSS is unchanged at 396 MB, so this is CPU and
-syscall time, not memory. The only package change between those commits is `130db78` (keep absolute
+syscall time, not memory. The only package change between those commits is `94ca1e1` (keep absolute
 paths out of findings), which routed reported paths through `adapters/base.relative()`; that helper
 calls `self.root.resolve()` and `path.resolve()` for every record, and on this tree a resolve costs
 0.498 ms - about 56 s of the measured 81 s at 60 000 files, which is the mechanism at the right
-magnitude. `130db78` is not being reverted: it closed a real report-sharing leak that SECURITY.md
+magnitude. `94ca1e1` is not being reverted: it closed a real report-sharing leak that SECURITY.md
 had already promised, and the fix is correct. The cheap follow-up is to resolve the root once per
 adapter instead of once per record, which is a performance change and therefore waits until the
 freeze lifts - it is registered in section 10 with this analysis as its justification.

@@ -78,10 +78,9 @@ you are unsure - judging that is the maintainer's job, not a reason to post publ
 
 **If that form is not on the page, private vulnerability reporting is not enabled for this repository
 yet.** GitHub only shows it once a repository administrator turns it on under
-Settings → Code security and compliance → **Private vulnerability reporting**. This document does not
-claim that has happened: the repository was created on 2026-09-22 and nothing has been pushed to it,
-so the setting has not been verified either way. Enabling it and re-checking this page is a step in
-`docs/RELEASE_CHECKLIST.md` section 3.
+Settings → Code security and compliance → **Private vulnerability reporting**. The presence of the
+form on the Security page is the current verification; a repository administrator can enable and
+re-check it as described in `docs/RELEASE_CHECKLIST.md` section 3.
 
 Until that form is live there is **no private channel**, and there is deliberately no contact address
 written here. We would rather state a gap than publish an email nobody has agreed to monitor.
