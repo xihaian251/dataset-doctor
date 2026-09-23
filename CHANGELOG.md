@@ -3,10 +3,16 @@
 All notable changes to Dataset Doctor are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project uses semantic versioning.
 
-## Unreleased
+## Unreleased (0.1.1 preparation)
 
-Everything between 0.1.0 and here is verification, not behaviour: no rule id, default severity or
-`formal_impact` changed. Two release-blocking *packaging* defects were fixed, listed under Fixed.
+- Post-release documentation now points to the published 0.1.0 package and the real repository.
+  This does not change code, version metadata or the immutable 0.1.0 files on PyPI.
+
+## 0.1.0 - 2026-09-23
+
+The final pre-release changes below were verification and packaging, not rule behaviour: no rule
+id, default severity or `formal_impact` changed. Two release-blocking packaging defects were
+fixed, listed under Fixed.
 
 ### Added
 
@@ -33,8 +39,7 @@ Everything between 0.1.0 and here is verification, not behaviour: no rule id, de
   `AuditStatus.FAIL` + `FormalImpact.BLOCKING`, DD010 separates unlabelled rows by which side of
   the evaluation boundary they sit on, DD015/DD021 pin their own rule ids and their `UNSUPPORTED`
   branch ("we did not look" can no longer be read as "we looked and it is fine").
-- Release engineering, **written but never executed** (written while there was no remote; the remote
-  exists now and carries no commits, so nothing in this bullet has run either):
+- Release engineering, written before the first push and subsequently exercised in CI:
   `.github/workflows/ci.yml` - static gates on 3.12, `pytest` on 3.11/3.12/3.13 across Ubuntu and
   Windows with the scale test held off, and `python -m build` followed by an audit run through the
   installed wheel; no publish step, no package-index upload, no tag trigger. Plus
@@ -65,14 +70,10 @@ Everything between 0.1.0 and here is verification, not behaviour: no rule id, de
   ranges are unchanged, so the three installed namespaces stay `dataset-doctor-audit` /
   `dataset_doctor_audit` / `dataset-doctor-audit` while the brand-level artifacts
   (`dataset-doctor.yaml`, `.dataset-doctor/`, `dataset-doctor-report/`) keep the short name.
-  `SECURITY.md`'s reporting section now names that repository's security page, states that an unfixed
-  vulnerability must not be disclosed through a public issue, and says plainly that private
-  vulnerability reporting is **not** claimed to be enabled — it needs a repository administrator to
-  turn it on, and the setting cannot be read while the remote holds no commits. No contact address was
-  invented to paper over that gap; until the form is live there is no private intake channel, and the
-  document now says so. One item was deliberately left alone: `pyproject.toml`'s `authors` still
-  carries the collective label, which is a credit line rather than a copyright assertion, and
-  `docs/RELEASE_CHECKLIST.md` section 3 registers it as a maintainer decision.
+  `SECURITY.md` names that repository's private vulnerability reporting form and forbids public
+  disclosure of unfixed issues. The form was enabled after the first push, and no unverified
+  contact address was invented. `pyproject.toml` names `冯硕` as the sole author, matching
+  `LICENSE`; the earlier collective placeholder was removed before publication.
 
 ### Fixed
 
@@ -198,6 +199,4 @@ Experiment`. Read-only by default, no LLM, no network, no GPU, evidence attached
 - Semantic leakage cannot be fully automated. Near duplicate thresholds are dataset-dependent.
   Distribution shift does not automatically mean invalid evaluation.
 - No test referenced DD001, DD008, DD013, DD017 or DD020, and DD021 had one test; see
-  `docs/PROJECT_STATE.md` section 6. (Closed 2026-09-22 - Unreleased above.)
-- Not yet published to PyPI, and no hosted repository: `[project.urls]` is intentionally absent
-  until both exist.
+  `docs/PROJECT_STATE.md` section 6. (Closed 2026-09-22 - 0.1.0 Added above.)

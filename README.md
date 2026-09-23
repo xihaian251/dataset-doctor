@@ -95,8 +95,10 @@ evidence block.
 
 ## Quick Start
 
-> **Release status:** V0.1 is not published to PyPI yet. Install from a checkout for now;
-> the `dataset-doctor-audit` console script is identical either way.
+> **Release status:** Version 0.1.0 is available on
+> [PyPI](https://pypi.org/project/dataset-doctor-audit/0.1.0/). Install it with
+> `pip install dataset-doctor-audit`. The already-published 0.1.0 files still contain the
+> pre-release wording; this documentation correction applies to `main` and future releases.
 >
 > **Name collision, and why every one of our namespaces carries the `-audit` suffix.** An
 > unrelated package owns `dataset-doctor` on PyPI (MIT, 1.0.1, uploaded 2026-03-25 - a tabular
@@ -110,7 +112,13 @@ evidence block.
 > and the per-dataset workdir is `.dataset-doctor/`.
 
 ```bash
-git clone <your-fork>/dataset-doctor-audit && cd dataset-doctor-audit
+pip install dataset-doctor-audit
+```
+
+To work from source instead:
+
+```bash
+git clone https://github.com/xihaian251/dataset-doctor.git && cd dataset-doctor
 pip install -e ".[image,excel]"
 ```
 

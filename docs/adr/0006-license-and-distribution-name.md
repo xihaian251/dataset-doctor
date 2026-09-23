@@ -49,5 +49,6 @@ called Dataset Doctor in prose.
   is a broken link in every package index. The condition has since been met — `[project.urls]`
   (`Homepage`, `Repository`, `Issues`) were added on 2026-09-22 pointing at
   `github.com/xihaian251/dataset-doctor`, the repository created that day, and the `LICENSE`
-  copyright line was given its named holder. The CI workflow ran for the first time only after a
-  push, and the PyPI publish job is still open (PROJECT_STATE section 10).
+  copyright line was given its named holder. The CI workflow ran for the first time after the
+  initial push; the Trusted Publishing steps and 0.1.0 release were completed on 2026-09-23
+  (PROJECT_STATE sections 1 and 10).

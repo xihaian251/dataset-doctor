@@ -12,11 +12,10 @@ doubt per unit of work.
 2. **Re-measure every doc example in CI.** A script that regenerates the `Examples` blocks from the
    quoted command and fails on a diff. Half of V0.1's real bugs surfaced as overstated rendered
    text; this turns that accident into a gate.
-3. **Release process**: ~~hosted repository, `[project.urls]`~~ both done 2026-09-22
-   (`github.com/xihaian251/dataset-doctor`, public, empty, wired as `origin`), the CI workflow
-   already sketched in the README, `dataset-doctor-audit` on PyPI, signed tags. The push itself, the
-   workflow's first green run and the index upload are what remains here, and all of them wait on
-   the maintainer.
+3. ~~**Release process**~~ Done 2026-09-23: the public repository, project URLs, green CI,
+   TestPyPI rehearsal, production PyPI 0.1.0, annotated `v0.1.0` tag at the frozen source commit,
+   and GitHub Release. The next version needs its own validation; this status update does not
+   release 0.1.1.
 4. ~~`--fingerprint sampled` reporting and the `imagehash`-absent fallback need explicit tests~~
    Done 2026-09-22 (`test_fingerprint_sampled_declares_its_coverage_and_is_deterministic`,
    `test_dd004_without_imagehash_is_inconclusive_and_the_rest_still_runs`).

@@ -1,10 +1,9 @@
 # Release checklist
 
-Sections 1 to 3 are checks a person can run on a laptop, and section 1 and 2 have been run
-(2026-09-22, Windows 11 / Python 3.13.1) - `docs/PROJECT_STATE.md` section 7 carries the numbers
-that run produced. Section 4 has not been executed and must not be: every step in it is
-irreversible in public, and `docs/PROJECT_STATE.md` section 10 records the same boundary from the
-project side.
+Sections 1 to 3 retain the measured 2026-09-22 local release-candidate record; section 4 records
+the completed 0.1.0 publication on 2026-09-23. `docs/PROJECT_STATE.md` section 7 carries the
+older local measurements. Re-run the applicable gates for 0.1.1 rather than treating either
+release's results as proof for a future artifact.
 
 ## 1. Reproduce the release locally
 
@@ -91,32 +90,31 @@ Then record what was actually measured, in this order:
       around it is unmodified. `pyproject.toml` now also names `冯硕` as the current sole author, so
       the published author metadata and copyright attribution agree.
 - [x] **`[project.urls]`.** Added 2026-09-22: `Homepage`, `Repository` and `Issues` point at
-      `github.com/xihaian251/dataset-doctor`, the public repository created that day. Deliberately no
-      `Changelog` key — a changelog URL wants a release tag or a published page, and neither exists
-      before the first push. These links resolve to an *empty* repository until section 4 runs.
-- [ ] **Private vulnerability reporting.** Still open, and not assumed done. `SECURITY.md` names the
-      security page and states plainly that the **Report a vulnerability** form only appears once a
-      repository administrator turns on Settings → Code security and compliance → **Private
-      vulnerability reporting**. Nobody has checked whether it is on, because nothing has been pushed
-      and an empty repository has no Security tab to read. Verify it after the first push. There is no
-      contact address to substitute and none was invented; until the form is live this project has no
-      private intake channel, which `SECURITY.md` now says out loud.
-- [ ] **Version number.** `0.1.0` for a first public release is a claim that the V0.1 rule set
-      is complete, which PROJECT_STATE supports; `0.1.0b0` is the honest alternative if any
-      V0.1 rule still feels provisional. Answered in section 5, not here: publish `0.1.0`, and
-      if a pre-release marker is ever wanted on the same index, PEP 440 spells it `rc`, not `b`.
+      `github.com/xihaian251/dataset-doctor`, now public with the 0.1.0 Release. No `Changelog`
+      project URL was added for 0.1.0.
+- [x] **Private vulnerability reporting.** Enabled and verified after the first push; the private
+      **Report a vulnerability** form is the channel described in `SECURITY.md`. No contact address
+      or public-issue workaround was added.
+- [x] **Version number.** `0.1.0` was published to PyPI. Any 0.1.1 release requires a separate
+      version decision, build and validation; this documentation update does not make one.
 
-## 4. Publish (blocked on explicit authorisation)
+## 4. Publish 0.1.0 (completed 2026-09-23)
 
-- [ ] ~~Create the remote repository~~ **Done 2026-09-22**: `github.com/xihaian251/dataset-doctor`,
-      public, created empty (no README/.gitignore/LICENSE/initial commit, because the history is
-      local), and configured as `origin`. Nothing has been pushed. Remaining: push the tagged commit;
-      never force-push a tagged release
-- [ ] `twine upload --repository testpypi dist/*` first, install from TestPyPI once, then upload to PyPI
-- [ ] Create the GitHub release from the signed tag with the `CHANGELOG.md` section as notes
-- [ ] Confirm the README install snippet and the CI workflow's `--ci` example both work from the published artefact
+- [x] Public `origin` received `main` without force push; CI passed 8/8 jobs on the workflow
+      commit. The annotated `v0.1.0` tag resolves to frozen source commit
+      `31200147cc8c9d2cd51c4bd58a1c17004c6fcbb2`, not the later workflow commit.
+- [x] TestPyPI verification preceded production PyPI. Both uploads used separate GitHub Actions
+      Trusted Publishers, not a local `twine upload` or long-lived API token. The
+      [production run](https://github.com/xihaian251/dataset-doctor/actions/runs/35858748946)
+      succeeded; its wheel and sdist match the PyPI files byte-for-byte.
+- [x] The [GitHub Release](https://github.com/xihaian251/dataset-doctor/releases/tag/v0.1.0)
+      is published from that annotated tag with the same two files and SHA256 values.
+- [x] A fresh virtual environment installed `dataset-doctor-audit==0.1.0` from production PyPI;
+      `pip check`, the CLI, safe/unsafe `--ci`, snapshot, baseline, diff, fingerprint and all three
+      report formats passed. The published 0.1.0 README retains its obsolete pre-release sentence;
+      `main` corrects it for the next package release, without replacing 0.1.0.
 
-## 5. Release candidate record - built 2026-09-22, deliberately not published
+## 5. Historical local release candidate - built 2026-09-22, not the published files
 
 | Item | Measured value |
 | --- | --- |
@@ -134,7 +132,7 @@ Then record what was actually measured, in this order:
 | Static gates at this commit | `ruff format --check .` "103 files already formatted" · `ruff check .` "All checks passed!" · `mypy` "no issues found in 32 source files" (with `numpy 2.4.6`, see section 2) · `pytest` 213 passed, 30 skipped, 1 warning in 74.66 s (86.99 s on the run immediately before it) |
 | Scale gate | 60 000 image samples, 487.7 s and 467.8 s cold, peak RSS 396 MB. Those ran with `dataset_doctor_audit/` byte-identical to today's (`git diff --stat 7542f16..HEAD -- dataset_doctor_audit` is empty); PROJECT_STATE section 7 carries the analysis |
 
-Two earlier builds are void and neither was published. The pair recorded here on 2026-09-22 at
+Two earlier builds are void and neither was published. The historical pair recorded here on 2026-09-22 at
 `6195dad` (wheel `b9ef247e…`, sdist `ddf603b2…`) carried CRLF copies of the package modules,
 because the build reads the working tree and some files had drifted to CRLF there while
 `git status` still reported them clean; section 2's byte-identity bullet exists because of that.
@@ -142,26 +140,27 @@ A build made minutes later, while a normalisation attempt was truncating files, 
 zero-byte modules (`20697c8e…`, `5a17f873…`). Nothing in the checklist as it then stood would have
 noticed it - `twine check` passes on an empty module and the entry count is unchanged - so it was
 found only because the wheel's hash had moved without any source change, which is what the
-byte-identity bullet now makes a routine check instead of a lucky catch. The two rows above are the
-artefacts to upload.
+byte-identity bullet now makes a routine check instead of a lucky catch. The two rows above are
+historical measurements, **not** the artifacts to upload or reuse.
 
-The commit that *records* these hashes is later than `6cdee51`. It changes documentation only - the
-two files under `docs/` that the sdist ships and the wheel never did - so a rebuild from that head
-differs from the sdist above by exactly those files and nothing else, which `git diff --stat
-6cdee51..HEAD` shows in one line each; the wheel is unaffected either way. That is not a
-contradiction: the artefacts a human should upload are the ones above. Rebuilding from the head you
-are standing on is equally acceptable and is the recommended last step before `twine upload` - it
-just produces a different sdist SHA-256, which should then replace the row above rather than sit
-beside it.
+The commit that recorded those historical hashes was later than `6cdee51`; at the time it changed
+only two files under `docs/`. Later release work changed more files. The published files were
+built from frozen commit `31200147` in the production workflow, not from this old candidate.
+Do not rebuild or attempt to replace immutable PyPI 0.1.0 files.
+
+| Published 0.1.0 file | SHA256, verified against PyPI JSON, downloaded file, workflow artifact and GitHub Release asset |
+| --- | --- |
+| `dataset_doctor_audit-0.1.0-py3-none-any.whl` | `40afbefd26c9bafe6ca70c3e7dc60072f2a0318c9d6e1defd0634ba6c00425fe` |
+| `dataset_doctor_audit-0.1.0.tar.gz` | `5111390aa583b1766bcd6e6c0745a143bf04352038a7b431a66a43bcc52edf11` |
 
 ### `0.1.0` or a pre-release: the judgement asked for
 
-Recommendation: publish `0.1.0`. No version change was made, and none is needed.
+Decision taken for the first release: publish `0.1.0` without a pre-release version bump.
 
 1. A pre-release buys rehearsal safety only if the rehearsal happens on the same index as the
    release. It does not: TestPyPI and PyPI are separate indexes, and uploading `0.1.0` to TestPyPI
-   consumes nothing on PyPI. Section 4's order - push, real CI green, TestPyPI, install from
-   TestPyPI, then PyPI - already provides the guard a beta version would provide.
+   consumed nothing on PyPI. Section 4's sequence - push, real CI green, TestPyPI, install from
+   TestPyPI, then PyPI - provided the rehearsal guard.
 2. The risk a pre-release genuinely protects against is that PyPI accepts a version once and never
    lets it be re-uploaded or edited, so a flawed `0.1.0` is permanent. That risk is real, which is
    why the two-clean-venv step above is a release gate rather than a nice-to-have; but a
@@ -178,7 +177,8 @@ Recommendation: publish `0.1.0`. No version change was made, and none is needed.
 
 ## 6. After publishing
 
-- [ ] Update `README.md` release-status note, `ROADMAP.md` and `docs/PROJECT_STATE.md` with
-      what is now true, including any measured numbers from step 1
+- [x] Update `README.md` release-status note, `ROADMAP.md` and `docs/PROJECT_STATE.md` with
+      the verified publication state. This is a post-release documentation commit for 0.1.1
+      preparation, not a rebuild of 0.1.0.
 - [ ] Open issues for the deferred work recorded in PROJECT_STATE rather than leaving it in
       prose, so the next reader sees the same gap list a maintainer sees

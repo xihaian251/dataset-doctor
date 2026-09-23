@@ -68,6 +68,7 @@ release dataset. Exclude `.dataset-doctor/` when publishing the data itself.
 Report privately at the repository's security page,
 **<https://github.com/xihaian251/dataset-doctor/security>**, using GitHub's **Report a vulnerability**
 form there. It reaches the maintainer directly and keeps the exploit out of a public issue.
+Private vulnerability reporting was enabled and verified after the first push on 2026-09-23.
 
 **Do not disclose an unfixed vulnerability through a public issue**, and do not describe it in a pull
 request, a discussion or a commit message first. This is not the ordinary "please search for existing
@@ -76,14 +77,9 @@ else's audit run, so even a precise rule id plus the words "this crashes" tells 
 look. If you are unsure whether what you found is a vulnerability, file it in the private form and say
 you are unsure - judging that is the maintainer's job, not a reason to post publicly.
 
-**If that form is not on the page, private vulnerability reporting is not enabled for this repository
-yet.** GitHub only shows it once a repository administrator turns it on under
-Settings → Code security and compliance → **Private vulnerability reporting**. The presence of the
-form on the Security page is the current verification; a repository administrator can enable and
-re-check it as described in `docs/RELEASE_CHECKLIST.md` section 3.
-
-Until that form is live there is **no private channel**, and there is deliberately no contact address
-written here. We would rather state a gap than publish an email nobody has agreed to monitor.
+If the form is missing later, ask a repository administrator to re-check
+Settings → Code security and compliance → **Private vulnerability reporting** before disclosing
+anything publicly. There is deliberately no unverified contact address here.
 
 There is no disclosure timeline, no CVE numbering authority relationship and no security team yet.
 That is stated rather than invented.
