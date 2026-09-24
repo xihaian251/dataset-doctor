@@ -33,8 +33,8 @@ All notable changes to Dataset Doctor are documented here. The format follows
   `test.csv` with no edit is read by `pandas.read_csv` with its default first-row-as-header.
   Measured directly: `train.csv` becomes 32 560 rows × 15 columns whose names are the first
   record's values, and `test.csv` becomes 16 281 rows × **1** column named `|1x3 Cross validator` -
-  `adult.test` carries a `|`-delimited marker as its second line, and that is what pandas used as
-  the header. The audit then reports 48 841 samples, one short of the official 48 842, with
+  `adult.test` opens with that `|`-delimited marker line, and it is what pandas used as the header,
+  leaving every 15-field record to collapse into one column. The audit then reports 48 841 samples, one short of the official 48 842, with
   `HIGH / FAIL` DD014
   "Schema mismatch between test and train" (15 columns extra in test, 3 missing), and DD003 finding
   333 duplicate groups / 15 970 samples inside `test` where the identical rows under a real header
