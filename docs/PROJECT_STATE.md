@@ -109,6 +109,18 @@ Each entry: what was ambiguous, the reading chosen, why, and how much it matters
    status and `formal_impact` untouched, because neutralising a false statement must not
    neutralise a real one. `tests/test_label_encoding.py` asserts both directions.
 
+6. **DD005's affected-sample locators pointed at rows that do not hold the leaked entity** - found
+   by the second real-world acceptance (UCI HAR, subject-level split) on the published 0.1.0 wheel:
+   `detect_group_leakage` counted rows (`enumerate` over each split's whole frame) and published the
+   counter as `metadata.affected_sample_ids`, so a leaked entity present at rows 1 and 3 of `train`
+   was reported as `train:0`, `train:1`. The verdict layer was arithmetically right (entity count,
+   per-split counts, `affected_count` all MATCH independent computation); only the row pointers a
+   reviewer would open were wrong - and the `[:200]` cap on that list printed no truncation flag, so
+   a 250-row entity looked like 200 rows. Fixed by recording real positions per entity and adding
+   `affected_sample_ids_truncated`; severity, status, `formal_impact`, `affected_count`, description
+   and evidence are byte-identical before and after on the HAR diagnostic split.
+   `tests/test_dd005_locators.py` pins both directions.
+
 Pattern worth remembering: each of these was invisible in the code and obvious in a *rendered
 report*. Documentation runs are a test surface - keep writing them per release. Since 2026-09-22
 that is not a suggestion: `tests/test_docs_contract.py` re-measures the documents, and it found two
@@ -236,6 +248,9 @@ the column then reads as 2-of-2. Fillers in PII fixtures must be real strings (`
 | ~~Scale: 48 000 image files~~ superseded 2026-09-22 | cold 315.0 s / warm 320.6 s, peak RSS 344 MB | recorded 2026-09-21 from a fixture under `%TEMP%`; see the analysis below for why it is not comparable |
 | UCI Adult, 48 842 rows tabular, **published wheel 0.1.0** | 19.28 s wall (16.83 s reported by the tool), `FORMAL_EVAL_INVALID`, 9 findings (1 CRITICAL · 2 HIGH · 4 MEDIUM · 2 INFO); 21 rules: 11 PASS · 1 FAIL · 4 NOT_RUN · 2 UNSUPPORTED · 0 INCONCLUSIVE | first real-world acceptance, 2026-09-25, run outside this repository (its `logs/` and `reports/` are not tracked here) |
 | Same dataset re-audited at this commit | verdict, severities, statuses and every count identical; the two findings carry the new claims: DD009 `encoding_only_groups: 23` of 26 groups, DD013 `common_support_classes: 0` | same acceptance workspace, 2026-09-25 |
+| UCI HAR, 10 299 rows × 561 features, **published wheel 0.1.0**, official subject-based clean split | 145.6 s wall (142.4 s reported by the tool), `FORMAL_EVAL_RISKY` (two DD007 MEDIUM candidates only), 730 findings, 21 rules: 12 PASS · 4 WARNING · 3 NOT_RUN · 2 UNSUPPORTED · 0 INCONCLUSIVE; **DD005 PASS in 5 ms** on a subject intersection independently computed as ∅ | second real-world acceptance, 2026-09-25, run outside this repository |
+| Same dataset, diagnostic fixture with one subject moved across the boundary | 114.75 s, `FORMAL_EVAL_INVALID`, sole blocking reason DD005 (CRITICAL/BLOCKING, 1 entity, per-split counts 1 test / 346 train, `affected_count` 347) - all four DD005 fields MATCH independent computation; the row locators in `affected_sample_ids` did **not** (defect 6) | same workspace, 2026-09-25 |
+| Candidate `main` (ahead of `origin/main` by 4) on both HAR cases | byte-equivalent verdicts, statuses, severities, findings and every count against the 0.1.0 wheel on the identical inputs; re-auditing the diagnostic at this tree after defect 6 changed only the locators | same workspace, 2026-09-25 |
 
 ### Scale regression analysis (2026-09-22)
 

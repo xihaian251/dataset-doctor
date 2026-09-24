@@ -43,6 +43,10 @@ the boundary to the same person.
    entities - because the rows are what the model saw. The evidence carries the top 20
    entities by row count, with the per-split breakdown:
    `{"group_column": "patient_id", "entities": 12, "examples": [{"entity": "p07", "splits": {"test": 3, "train": 9}}]}`.
+   `metadata.affected_sample_ids` lists up to 200 real locators `split:position`, where
+   `position` is the 0-based row index inside that split's data rows - a reviewer can
+   open it; when more than 200 rows are involved,
+   `metadata.affected_sample_ids_truncated` says so.
 6. If nothing crosses the boundary but the column is near-unique overall (unique ratio
    > 0.98), emit a `LOW` / `FormalImpact.NONE` advisory instead - see False Positives.
 

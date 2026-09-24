@@ -45,15 +45,17 @@ def detect_group_leakage(ctx: AuditContext) -> list[Any]:
     by_split = dict(ctx.tables)
     for column in available:
         presence: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        positions: dict[str, dict[str, list[int]]] = defaultdict(lambda: defaultdict(list))
         total_rows = 0
         for split, frame in by_split.items():
             if column not in frame.columns:
                 continue
-            for value in frame[column].tolist():
+            for position, value in enumerate(frame[column].tolist()):
                 key = _entity_key(value)
                 if key is None:
                     continue
                 presence[key][split] += 1
+                positions[key][split].append(position)
                 total_rows += 1
         if not presence:
             continue
@@ -67,10 +69,10 @@ def detect_group_leakage(ctx: AuditContext) -> list[Any]:
             continue
         for split_a, split_b, entities in _entity_pairs(ctx, cross):
             affected = [
-                f"{split}:{index}"
+                f"{split}:{position}"
                 for entity, splits in entities.items()
                 for split in splits
-                for index in range(splits[split])
+                for position in positions[entity][split]
             ]
             findings.append(
                 build_finding(
@@ -109,7 +111,11 @@ def detect_group_leakage(ctx: AuditContext) -> list[Any]:
                         f"Re-split with `dataset-doctor-audit split <file> --group-by {column}` so every "
                         f"{column} lands in exactly one split, then re-audit."
                     ),
-                    metadata={"scope": "cross_split", "affected_sample_ids": affected[:200]},
+                    metadata={
+                        "scope": "cross_split",
+                        "affected_sample_ids": affected[:200],
+                        "affected_sample_ids_truncated": len(affected) > 200,
+                    },
                 )
             )
             sequence += 1

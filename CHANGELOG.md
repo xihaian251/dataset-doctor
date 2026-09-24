@@ -49,6 +49,22 @@ All notable changes to Dataset Doctor are documented here. The format follows
 
 ### Fixed
 
+- **DD005's row pointers named rows that do not hold the leaked entity.** The second
+  real-world acceptance (UCI HAR, through the installed 0.1.0 wheel) found that a
+  cross-split `affected_sample_ids` entry was `f"{split}:{i}"` for `i` in
+  `range(row_count)` - a per-entity counter, not a position. On the official clean split
+  everything else about DD005 checked out (entity count, per-split counts and the entity
+  id all matched an independent recomputation), and on a subject whose rows happen to sit
+  contiguously the counter can coincide with real row numbers; a four-row synthetic
+  fixture with the entity placed at train rows 1 and 3 and test row 2 showed 0.1.0
+  emitting `train:0, train:1, test:0` - every pointer a wrong row. A reviewer told to
+  open `test:0` to see the leaked row is sent to an innocent one. Locators are now real
+  0-based data-row positions collected while scanning the entity column, and the silent
+  `[:200]` budget is declared: `affected_sample_ids_truncated` is present and true when
+  rows were cut. Nothing about the finding's verdict inputs changed: severity, status,
+  `formal_impact`, `affected_count`, description and evidence keys are byte-identical to
+  0.1.0 on the same data (measured by re-auditing the HAR diagnostic fixture before and
+  after). `tests/test_dd005_locators.py` pins both halves.
 - **DD009 called a spelling difference a label conflict, and DD013 called it a distribution
   shift.** Found by the first acceptance run against an external dataset - UCI Adult, through the
   installed wheel rather than this tree. `adult.data` writes its classes `<=50K` / `>50K` and
