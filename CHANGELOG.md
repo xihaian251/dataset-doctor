@@ -28,6 +28,24 @@ All notable changes to Dataset Doctor are documented here. The format follows
   gains a third answer ("unresolved", which rules must then answer INCONCLUSIVE for) or discovery
   sniffs content instead of names, and that sniff is what would make `scan` of a raw UCI download
   work with zero configuration. Both change coverage semantics beyond a wording fix.
+- **A headerless CSV has no way to say so, and nothing in the report says the parse guessed.**
+  Same bytes, only the extension differs: `adult.data` / `adult.test` copied to `train.csv` /
+  `test.csv` with no edit is read by `pandas.read_csv` with its default first-row-as-header.
+  Measured directly: `train.csv` becomes 32 560 rows × 15 columns whose names are the first
+  record's values, and `test.csv` becomes 16 281 rows × **1** column named `|1x3 Cross validator` -
+  `adult.test` carries a `|`-delimited marker as its second line, and that is what pandas used as
+  the header. The audit then reports 48 841 samples, one short of the official 48 842, with
+  `HIGH / FAIL` DD014
+  "Schema mismatch between test and train" (15 columns extra in test, 3 missing), and DD003 finding
+  333 duplicate groups / 15 970 samples inside `test` where the identical rows under a real header
+  give 5 groups / 10 samples - the split had collapsed to two distinct values. DD014 alone is
+  BLOCKING, so the verdict is `FORMAL_EVAL_INVALID` on a split that is the official one. Neither
+  `adapter_notes` nor `config_warnings` recorded anything about it. There is no `header:` key in
+  `dataset-doctor.yaml` or `docs/guides/CONFIGURATION.md`, so the only way out is to materialise a
+  header row into the user's data - an edit the tool itself never makes.
+  Registered, not fixed: the fix is a parsing contract (`parse.header` / explicit `columns:`, and
+  the dtype inference that follows) plus a decision about whether a guessed parse may block, which
+  is a release, not a patch inside an acceptance run.
 
 ### Fixed
 
