@@ -8,6 +8,27 @@ All notable changes to Dataset Doctor are documented here. The format follows
 - Post-release documentation now points to the published 0.1.0 package and the real repository.
   This does not change code, version metadata or the immutable 0.1.0 files on PyPI.
 
+### Known issues registered by the first real-world acceptance (UCI Adult), not fixed here
+
+- **A dataset whose files carry no recognised extension is declared a table and then audited as
+  images.** Reproduced on this commit with UCI Adult's own names - `adult.data` and `adult.test`
+  mapped by `splits:` in `dataset-doctor.yaml`, nothing else changed: the audit ends
+  `FORMAL_EVAL_RISKY`, 2 samples / 21 rules, with `HIGH` DD016 "Unreadable or corrupt images: 2 of
+  2" (`identifiers`: `adult.data`, `adult.test`) and `HIGH` DD010 "Unlabelled samples: 2 of 2", and
+  its repair plan tells the user to `mv adult.data adult.test` into a quarantine directory and
+  "re-download or re-export the listed files". The two files are intact; 32 561 and 16 281 rows
+  parse out of them one directory level up, where the same bytes carry `.csv`.
+  Root cause is one function disagreeing with itself: `discovery._type_from_paths` counts only
+  suffixes, so with neither a tabular nor an image extension present both hit counters are 0, the
+  note it appends reads `Dataset type inferred from content (tables)` because `0 >= 0`, and the
+  value it returns is `DatasetType.IMAGE` because the return guards on `table_hits` being nonzero.
+  Everything downstream then takes the image branch, and DD016 - which is a real rule about pixels -
+  reports a defect that does not exist.
+  Not fixed in this run because the honest repair is a decision, not a patch: either the type model
+  gains a third answer ("unresolved", which rules must then answer INCONCLUSIVE for) or discovery
+  sniffs content instead of names, and that sniff is what would make `scan` of a raw UCI download
+  work with zero configuration. Both change coverage semantics beyond a wording fix.
+
 ### Fixed
 
 - **DD009 called a spelling difference a label conflict, and DD013 called it a distribution
