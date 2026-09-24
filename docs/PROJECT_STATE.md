@@ -88,7 +88,7 @@ Each entry: what was ambiguous, the reading chosen, why, and how much it matters
 | A22 | "Heuristic rules carry `LOW` confidence" | Not uniform, and now checked per rule instead of assumed: DD004 caps at `MEDIUM` (a pHash collision is arithmetic about pixels even though the threshold is a judgement), DD008 is `MEDIUM` for an identifier-named column and `LOW` for plain high cardinality, DD007's candidate layer and DD021 are `LOW`. Each rule document must state its own confidence, and `test_docs_contract.py` enforces that | Medium - the blanket version of the rule would misreport how much of each finding is arithmetic |
 | A23 | Should distribution shift fail a CI gate? | It must not change the *verdict*: DD012/DD013 are `POTENTIAL`, so shift moves `SAFE`→`RISKY` and never to `INVALID` (measured on `examples/shifted_tabular`). It does move `--ci`, because that gate is defined as "verdict is not `FORMAL_EVAL_SAFE`" - a separate, opt-in decision about how strict a merge gate is. Whether a harder benchmark invalidates *your* evaluation stays a task question | **High** for adoption - the gap between "risky" and "invalid" is the whole pitch |
 
-## 4. Defects found while writing the docs (all fixed, all with tests)
+## 4. Defects found while writing the docs or auditing real data (all fixed, all with tests)
 
 1. **Path leakage and unstable fingerprints** (A14/A15) - `tests/test_paths.py` covers relative
    resolution; the fix is exercised by every diff test.
@@ -100,10 +100,21 @@ Each entry: what was ambiguous, the reading chosen, why, and how much it matters
    findings resolve through `_locator`; `tests/test_diff.py::
    test_the_audit_baseline_finding_names_rows_a_reviewer_can_open`.
 
+5. **A punctuation difference billed as a label conflict** - found by the first real-world
+   acceptance run, on the official UCI Adult files with the published 0.1.0 wheel: 23 of DD009's
+   26 cross-split groups were `<=50K` against `<=50K.`, and DD013 reported the resulting disjoint
+   supports as a `HIGH` label shift of `tv 1.000` where the measured shift is 0.0046. Every number
+   in the report was arithmetically right; the claims attached to them were not. Fixed in the
+   descriptions and the evidence (`encoding_only_groups`, `common_support_classes`) with severity,
+   status and `formal_impact` untouched, because neutralising a false statement must not
+   neutralise a real one. `tests/test_label_encoding.py` asserts both directions.
+
 Pattern worth remembering: each of these was invisible in the code and obvious in a *rendered
 report*. Documentation runs are a test surface - keep writing them per release. Since 2026-09-22
 that is not a suggestion: `tests/test_docs_contract.py` re-measures the documents, and it found two
-more stale claims the same way (section 6, last paragraph).
+more stale claims the same way (section 6, last paragraph). Defect 5 adds the other half of the
+lesson: a dataset this repository did not write, audited through the installed wheel rather than
+the source tree, found in one afternoon what four documentation passes did not.
 
 ## 5. Spec TEST 1-37 coverage
 
@@ -223,6 +234,8 @@ the column then reads as 2-of-2. Fillers in PII fixtures must be real strings (`
 | Raw floor over the same 60 000-file tree, no detector code | read + SHA-256 of every file 21.8 s (0.36 ms/file); PIL decode 0.42 ms/file | `p4_baseline.py`, 2026-09-22 |
 | Filesystem call cost on that tree | `Path.resolve()` 0.498 ms, `os.stat()` 0.142 ms per path | micro-benchmark, 8 000 paths, 2026-09-22 |
 | ~~Scale: 48 000 image files~~ superseded 2026-09-22 | cold 315.0 s / warm 320.6 s, peak RSS 344 MB | recorded 2026-09-21 from a fixture under `%TEMP%`; see the analysis below for why it is not comparable |
+| UCI Adult, 48 842 rows tabular, **published wheel 0.1.0** | 19.28 s wall (16.83 s reported by the tool), `FORMAL_EVAL_INVALID`, 9 findings (1 CRITICAL · 2 HIGH · 4 MEDIUM · 2 INFO); 21 rules: 11 PASS · 1 FAIL · 4 NOT_RUN · 2 UNSUPPORTED · 0 INCONCLUSIVE | first real-world acceptance, 2026-09-25, run outside this repository (its `logs/` and `reports/` are not tracked here) |
+| Same dataset re-audited at this commit | verdict, severities, statuses and every count identical; the two findings carry the new claims: DD009 `encoding_only_groups: 23` of 26 groups, DD013 `common_support_classes: 0` | same acceptance workspace, 2026-09-25 |
 
 ### Scale regression analysis (2026-09-22)
 
@@ -325,6 +338,16 @@ identifier, and DD018/DD019 measure nothing without a baseline - `NOT_RUN` is no
    resolves the dataset root for every record, which `tests/test_scale.py` costs about 20% of the
    60 000-file audit (section 7). Resolving it once per adapter is the fix. It is a performance
    change with no release necessity, so it waits; the A/B numbers above are its pre-registration.
+7. Registered on 2026-09-25 by the UCI Adult acceptance run, **not** fixed: DD003 compares rows by
+   `row_sha256`, which includes the label as written, so on a dataset whose two official files
+   spell their classes differently it reports *no* cross-split duplication while DD009 - which
+   hashes features only - reports the same samples as label conflicts. Measured: with the labels
+   as shipped, DD003 emits 0 cross-split groups; with only the trailing `.` removed from
+   `adult.test`, the same 23 content groups (48 samples) appear as `CRITICAL / BLOCKING` and
+   DD013/DD014 go quiet. Making DD003 compare features and treat the label as an attribute is a
+   rule-semantics change on the tool's flagship rule, so it is a release decision, not an
+   acceptance-run patch. The evidence the user needs is already in the report: DD009's members
+   carry `split`, so the boundary crossing is visible there.
 
 ## 11. Scratch state - disposition
 

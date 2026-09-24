@@ -14,6 +14,7 @@ was declared as the label (spec section 55).
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from typing import Any
 
@@ -29,6 +30,20 @@ from ..models import (
     SplitRole,
 )
 from .context import AuditContext, InsufficientEvidence, NotApplicable, build_finding
+
+TRAILING_PUNCTUATION = re.compile(r"[\s.]+$")
+
+
+def _label_form(label: str) -> str:
+    """A label with surrounding whitespace and trailing sentence punctuation removed.
+
+    Several public datasets append a '.' to every class in one of their two files
+    (UCI Adult's `adult.test` is the usual example). Such a pair of labels is the same
+    class written twice, and DD009 has to say so - but the comparison it reports on
+    stays the exact one, because grouping by a normalised label would silently merge
+    two classes that a user's own pipeline keeps apart.
+    """
+    return TRAILING_PUNCTUATION.sub("", label.strip())
 
 
 def detect_label_conflicts(ctx: AuditContext) -> list[Any]:
@@ -94,6 +109,21 @@ def detect_label_conflicts(ctx: AuditContext) -> list[Any]:
         if not group:
             continue
         members = [record for _, bucket in group for record in bucket]
+        encoding_only = [
+            (key, bucket) for key, bucket in group if len({_label_form(str(m.label)) for m in bucket}) == 1
+        ]
+        description = (
+            f"{len(group)} content group(s) hold the same data under different labels; "
+            f"{len(members)} samples are involved."
+        )
+        if encoding_only:
+            description += (
+                f" In {len(encoding_only)} of these group(s) the two labels are one class written two "
+                f"ways - they differ only by whitespace or a trailing '.' - so the copies are the same "
+                "row appearing twice with a differently encoded answer, not a contradiction between "
+                "annotators. Normalising the spelling is the first thing to check; the identical "
+                "content across a split boundary is the part that contaminates the metric."
+            )
         findings.append(
             build_finding(
                 ctx,
@@ -113,16 +143,18 @@ def detect_label_conflicts(ctx: AuditContext) -> list[Any]:
                 affected=[record.sample_id for record in members],
                 affected_count=len(members),
                 paths=[record.relative_path for record in members],
-                description=(
-                    f"{len(group)} content group(s) hold the same data under different labels; "
-                    f"{len(members)} samples are involved."
-                ),
+                description=description,
                 why_it_matters=(
                     f"Identical input with two answers makes the label noise floor unremovable: the best a "
                     f"model can do is guess between them. Here {where}."
                 ),
                 evidence={
                     "scope": scope,
+                    "encoding_only_groups": len(encoding_only),
+                    "encoding_only_labels": [
+                        {"content_hash": key[:16], "labels": sorted({str(m.label) for m in bucket})}
+                        for key, bucket in sorted(encoding_only, key=lambda item: -len(item[1]))[:5]
+                    ],
                     "groups": [
                         {
                             "content_hash": key[:16],
@@ -142,7 +174,11 @@ def detect_label_conflicts(ctx: AuditContext) -> list[Any]:
                 limitations=[
                     "For tabular data 'identical content' means identical feature values "
                     "(label and id columns excluded). Two genuinely different cases can share a "
-                    "coarse feature vector; that is low-cardinality encoding, not mislabelling."
+                    "coarse feature vector; that is low-cardinality encoding, not mislabelling.",
+                    "Labels are compared as exact strings, so one class written two ways reads as a "
+                    "conflict. `encoding_only_groups` counts how many of these groups collapse to a "
+                    "single class once whitespace and a trailing '.' are removed; that count is a "
+                    "description of the evidence, and no grouping or severity uses it.",
                 ],
                 metadata={"scope": scope},
             )

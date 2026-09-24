@@ -68,6 +68,13 @@ and DD009's separate `feature_sha256` key.
 - **A re-saved file is a different file.** Byte hashing is exact: recompression, EXIF
   rewriting or a different row order in a CSV defeats it. That is DD004's job, not a
   weakness of this rule's claim - DD003 only ever asserts what it measured.
+- **A row whose label is spelled differently in the other file is a different row.**
+  `row_sha256` covers every column but the split, so on the official UCI Adult files - `<=50K` in
+  `adult.data`, `<=50K.` in `adult.test` - this rule measured 0 cross-split groups while 23 content
+  groups genuinely spanned the boundary; deleting only that dot makes them appear as 48 samples,
+  `CRITICAL` / `BLOCKING`. The samples are not missing from the report: DD009 groups tables by
+  *feature* hash, so it lists exactly those rows with their `split`, and its description names how
+  many of its groups differ by punctuation alone. Registered in PROJECT_STATE section 10 item 7.
 - **Cross-split exact duplicates necessarily imply shared entity content.** In fixtures
   where a duplicated row also carries a repeated `patient_id`, DD005 fires alongside
   DD003. That is not a double count: one is content identity, the other is group identity,

@@ -8,6 +8,43 @@ All notable changes to Dataset Doctor are documented here. The format follows
 - Post-release documentation now points to the published 0.1.0 package and the real repository.
   This does not change code, version metadata or the immutable 0.1.0 files on PyPI.
 
+### Fixed
+
+- **DD009 called a spelling difference a label conflict, and DD013 called it a distribution
+  shift.** Found by the first acceptance run against an external dataset - UCI Adult, through the
+  installed wheel rather than this tree. `adult.data` writes its classes `<=50K` / `>50K` and
+  `adult.test` writes `<=50K.` / `>50K.`, so on 48 842 rows the tool reported 26 cross-split
+  "conflicting labels" groups (CRITICAL, BLOCKING) of which 23 were that single trailing dot, and
+  a `HIGH` label shift of `total variation 1.000` between two splits whose measured shift is
+  0.0046. Every count and every number was arithmetically correct; the sentences attached to them
+  were not, and the report blamed annotators for a separator convention while the real
+  contradiction - 3 groups, 6 samples, exactly the `Duplicate or conflicting instances : 6` the
+  dataset's own metadata states - was buried in the noise. Nothing about the consequence changed:
+  a test set whose labels do not match the training vocabulary still blocks, because the mapping
+  is a human decision. What changed is that the finding now says which of its own groups are
+  punctuation.
+  - DD009 adds `encoding_only_groups` and up to 5 `encoding_only_labels` pairs to its evidence, and
+    its description names them, in all three scopes. Labels are still compared as exact strings and
+    grouped exactly as before - normalising them would merge two classes a user's pipeline may keep
+    apart, and that would be a silent edit of the user's data in the middle of a comparison.
+  - DD013 adds `common_support_classes`, and when it is 0 the description states that the figure
+    compares two vocabularies rather than two class proportions, and points at DD014, which names
+    the one-sided categories. The number itself is untouched: genuinely disjoint classes deserve
+    the same arithmetic.
+  - `tests/test_label_encoding.py` (5 checks) pins both directions - a real `a`/`b` conflict must
+    not gain the encoding sentence, a shared-vocabulary shift must not gain the vocabulary
+    sentence - and holds severity, status, `formal_impact`, `affected_count` and the verdict to
+    their released values on the same fixture, so a wording fix cannot smuggle in a weakening.
+    Separately, re-auditing the Adult copy at this commit reproduces the 0.1.0 verdict, severities
+    and counts exactly - measured: the two reports differ in nothing but the DD009 descriptions,
+    evidence and limitations, the DD013 description and evidence, and wall-clock fields.
+  - Registered but **not** fixed: because DD003 hashes the whole row including the label, this same
+    punctuation difference hides the cross-split duplication it is standing on. Measured with only
+    the trailing dot removed from `adult.test`, DD003 emits `CRITICAL / BLOCKING` for 23 content
+    groups spanning train and test (48 samples) and DD013/DD014 go quiet. Changing what DD003
+    treats as row identity is a rule-semantics decision for a release, not a patch inside an
+    acceptance run - see PROJECT_STATE section 10 item 7.
+
 ## 0.1.0 - 2026-09-23
 
 The final pre-release changes below were verification and packaging, not rule behaviour: no rule

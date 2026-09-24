@@ -33,7 +33,9 @@ split (or the first non-empty one) compared against every other non-empty split.
    is readable; otherwise from the manifest's labelled records - which is the image path, since
    a folder layout has no label column.
 2. Union the supports so a class present only in one split is not silently dropped: its share
-   on the missing side is 0, and it appears in `largest_movers`.
+   on the missing side is 0, and it appears in `largest_movers`. `common_support_classes` in the
+   evidence counts the labels present on *both* sides; when it is 0 the description says so,
+   because the number below is then comparing two vocabularies rather than two proportions.
 3. `tv = ½ Σ |p_i − q_i|` (total variation, bounded [0, 1]);
    `js = √(JSD)` reported as a distance for the same reason - it is the more readable of the two
    when one class has vanished.
@@ -45,6 +47,13 @@ point mass - the missing labels belong to [DD010](DD010-missing-labels.md).
 
 ## False Positives
 
+- **Two spellings of one class reach total variation 1.000.** Measured on the official UCI Adult
+  files: `adult.data` writes `<=50K`, `adult.test` writes `<=50K.`, so the two supports are
+  disjoint, `common_support_classes` is 0, and the rule reports `tv 1.000` / `HIGH` - while the
+  same two splits, after the dot is removed from the labels, differ by `tv 0.0046` and the rule
+  passes. That is why the finding states the arithmetic it is doing: a re-encoding and a
+  genuinely disjoint class set deserve the same number and not the same interpretation. The
+  categories that appear on one side only are named by [DD014](DD014-schema-drift.md).
 - **Enriched test sets are a design choice.** Balancing evaluation on rare classes is standard
   practice, and this rule will fire every time. The limitation is printed on the finding:
   *"A test set deliberately enriched for rare cases is a design choice, not an error. Report

@@ -160,6 +160,7 @@ def detect_label_shift(ctx: AuditContext) -> list[Any]:
             continue
         train_total = max(sum(train_counts.values()), 1)
         test_total = max(sum(test_counts.values()), 1)
+        common_support = [key for key in keys if train_counts.get(key) and test_counts.get(key)]
         ranked = sorted(
             (
                 (
@@ -179,6 +180,17 @@ def detect_label_shift(ctx: AuditContext) -> list[Any]:
             for _, key in ranked
         ]
         severity = Severity.HIGH if tv >= 0.30 else Severity.MEDIUM if tv >= 0.15 else Severity.LOW
+        description = (
+            f"P({label_column or 'y'}) differs between {reference} and {target}: "
+            f"total variation {tv:.3f}, Jensen-Shannon distance {jsd:.3f}."
+        )
+        if not common_support:
+            description += (
+                " No label value appears in both splits, so this compares two vocabularies rather than "
+                "two class proportions: a single class written differently in each file reaches total "
+                "variation 1.000 exactly as genuinely disjoint classes do. Read it together with DD014, "
+                "which names the categories that appear on one side only."
+            )
         findings.append(
             build_finding(
                 ctx,
@@ -194,10 +206,7 @@ def detect_label_shift(ctx: AuditContext) -> list[Any]:
                 source_split=reference,
                 target_split=target,
                 affected_count=sum(test_counts.values()),
-                description=(
-                    f"P({label_column or 'y'}) differs between {reference} and {target}: "
-                    f"total variation {tv:.3f}, Jensen-Shannon distance {jsd:.3f}."
-                ),
+                description=description,
                 why_it_matters=(
                     "A weighted average over classes changes when prevalence changes, even with a fixed "
                     "confusion matrix. Comparing this test set's accuracy with a differently balanced one is "
@@ -208,6 +217,7 @@ def detect_label_shift(ctx: AuditContext) -> list[Any]:
                     "js_distance": round(jsd, 4),
                     "train_total": sum(train_counts.values()),
                     "test_total": sum(test_counts.values()),
+                    "common_support_classes": len(common_support),
                     "largest_movers": movers,
                     "threshold": threshold,
                 },

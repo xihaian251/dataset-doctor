@@ -43,10 +43,23 @@ model the answer and the other grades it.
 | `within_split` (train) | all members in a non-evaluation split | `MEDIUM` | `WARNING` | `POTENTIAL` |
 
 Evidence carries the truncated content hash (16 hex), the label set, and up to 10 members per
-group with `sample_id`, `split` and `label`, capped at the 20 largest groups.
+group with `sample_id`, `split` and `label`, capped at the 20 largest groups. It also carries
+`encoding_only_groups` and up to 5 `encoding_only_labels` pairs: how many of the groups collapse
+to a *single* class once surrounding whitespace and a trailing `.` are removed, and which spellings
+those were. That count describes the evidence; it does not group, rank or price anything.
 
 ## False Positives
 
+- **One class written two ways.** The official UCI Adult files label `adult.data` rows `<=50K` and
+  `adult.test` rows `<=50K.`. Measured on that dataset (48 842 rows, one column added, no value
+  touched): DD009 emitted 26 cross-split groups and 23 of them are that single trailing dot - the
+  evidence says `encoding_only_groups: 23` and the description names it. The 3 groups left (6
+  samples) are real contradictions, and 6 is exactly what the dataset's own metadata states:
+  *"Duplicate or conflicting instances : 6"*. Exact-string comparison is kept on purpose: a
+  normalised label would silently merge two classes the user's own pipeline may keep apart. The
+  group still blocks, because a test set whose labels do not match the training vocabulary cannot
+  be scored until a human confirms the mapping - what changed is that the finding now says which
+  of its groups are punctuation.
 - **Coarse tabular feature vectors collide legitimately.** With four integer columns and 500
   rows, two genuinely different patients can share a feature hash. The finding is still
   correct as a *question* - the model cannot separate these two rows - but the fix may be
