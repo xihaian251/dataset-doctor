@@ -14,11 +14,11 @@ fault that was planted without running anything.
 | `shifted_tabular` | covariate + label shift, no leakage | `FORMAL_EVAL_RISKY` | 260 | 2 high, 1 low, 1 info |
 | `leaky_patient_dataset` | entity, exact duplicate and target leakage together, plus a temporal inversion | `FORMAL_EVAL_INVALID` | 309 | 2 critical, 3 high, 2 medium, 1 low, 1 info |
 | `safe_image` | nothing (control) | `FORMAL_EVAL_SAFE` | 63 | 1 low, 1 info |
-| `unsafe_image_duplicate` | byte-identical images inside test | `FORMAL_EVAL_INVALID` | 51 | 1 critical, 2 low, 1 info |
-| `unsafe_near_duplicate` | perceptually identical images across the boundary | `FORMAL_EVAL_RISKY` | 53 | 1 high, 2 low, 1 info |
-| `unsafe_image_label_conflict` | one image, three classes | `FORMAL_EVAL_INVALID` | 56 | 2 critical, 1 low, 1 info |
-| `corrupt_image` | a truncated JPEG and a zero-byte PNG | `FORMAL_EVAL_RISKY` | 36 | 1 high, 2 low, 1 info |
-| `leaky_image_dataset` | 10 exact / 6 near duplicates, 3-way label conflict, 2 corrupt files, imbalance | `FORMAL_EVAL_INVALID` | 100 | 2 critical, 2 high, 2 low, 1 info |
+| `unsafe_image_duplicate` | byte-identical images inside test | `FORMAL_EVAL_INVALID` | 51 | 1 critical, 3 low, 1 info |
+| `unsafe_near_duplicate` | perceptually identical images across the boundary | `FORMAL_EVAL_RISKY` | 53 | 1 high, 3 low, 1 info |
+| `unsafe_image_label_conflict` | one image, three classes | `FORMAL_EVAL_INVALID` | 56 | 2 critical, 1 medium, 1 low, 1 info |
+| `corrupt_image` | a truncated JPEG and a zero-byte PNG | `FORMAL_EVAL_RISKY` | 36 | 2 high, 2 low, 1 info |
+| `leaky_image_dataset` | 10 exact / 6 near duplicates, 3-way label conflict, 2 corrupt files, imbalance | `FORMAL_EVAL_INVALID` | 100 | 2 critical, 3 high, 2 low, 1 info |
 
 ## Every CRITICAL, HIGH and MEDIUM finding
 
@@ -42,8 +42,11 @@ fault that was planted without running anything.
 - `unsafe_near_duplicate` DD004-0001 **HIGH** WARNING (POTENTIAL) - test / train
 - `unsafe_image_label_conflict` DD003-0001 **CRITICAL** FAIL (BLOCKING) - test / train
 - `unsafe_image_label_conflict` DD009-0001 **CRITICAL** FAIL (BLOCKING) - Conflicting labels on identical content (1 group(s), across splits)
+- `unsafe_image_label_conflict` DD013-0001 **MEDIUM** WARNING (POTENTIAL) - train vs test
+- `corrupt_image` DD013-0001 **HIGH** WARNING (POTENTIAL) - train vs test
 - `corrupt_image` DD016-0001 **HIGH** WARNING (POTENTIAL) - 2 of 36
 - `leaky_image_dataset` DD003-0001 **CRITICAL** FAIL (BLOCKING) - test / train
 - `leaky_image_dataset` DD004-0001 **HIGH** WARNING (POTENTIAL) - test / train
 - `leaky_image_dataset` DD009-0001 **CRITICAL** FAIL (BLOCKING) - Conflicting labels on identical content (1 group(s), across splits)
+- `leaky_image_dataset` DD013-0001 **HIGH** WARNING (POTENTIAL) - train vs test
 - `leaky_image_dataset` DD016-0001 **HIGH** WARNING (POTENTIAL) - 2 of 100

@@ -428,6 +428,96 @@ def test_dd013_a_small_shift_is_low_and_respects_a_raised_threshold(tmp_path: Pa
     assert run_audit(strict_root).by_rule("DD013") == [], "min_tv_distance must be policy-wired"
 
 
+def test_dd013_counts_folder_labels_when_the_layout_has_no_table(images: Any, pattern: Any, run_audit: Any) -> None:
+    """An image dataset carries its labels in directory names and has no table frame at all.
+
+    Asking for a frame first made the helper answer "no labels" for every image layout, so the
+    rule reported PASS while the split proportions differed by a factor of three.
+    """
+    root = images(
+        "labels_no_table",
+        train={"ok": [pattern(seed) for seed in range(1, 9)]},
+        test={
+            "ok": [pattern(seed) for seed in range(21, 23)],
+            "defect": [pattern(seed) for seed in range(31, 37)],
+        },
+    )
+
+    findings = run_audit(root).by_rule("DD013")
+    assert len(findings) == 1, "folder labels are a measurable label distribution"
+    finding = findings[0]
+    assert (finding.source_split, finding.target_split) == ("train", "test")
+    assert finding.evidence["tv_distance"] == pytest.approx(0.75)
+    assert finding.severity is Severity.HIGH
+    assert finding.status is AuditStatus.WARNING
+    assert finding.formal_impact is FormalImpact.POTENTIAL
+    movers = {row["class"]: row for row in finding.evidence["largest_movers"]}
+    assert movers["defect"] == {"class": "defect", "train_share": 0.0, "test_share": 0.75}
+
+
+def test_dd013_stays_silent_when_the_folder_labels_are_proportionally_identical(
+    images: Any, pattern: Any, run_audit: Any
+) -> None:
+    root = images(
+        "labels_no_table_clean",
+        train={
+            "ok": [pattern(seed) for seed in range(1, 9)],
+            "defect": [pattern(seed) for seed in range(11, 19)],
+        },
+        test={
+            "ok": [pattern(seed) for seed in range(21, 23)],
+            "defect": [pattern(seed) for seed in range(31, 33)],
+        },
+    )
+    assert run_audit(root).by_rule("DD013") == []
+
+
+def test_dd013_reports_the_same_shift_from_a_table_and_from_folder_names(
+    tmp_path: Path, images: Any, pattern: Any, run_audit: Any
+) -> None:
+    """One label distribution written two ways must reach one set of numbers.
+
+    The rule reads labels from a frame when the layout has one and from the manifest when it does
+    not, so the two paths are only interchangeable if the measurement is identical. This is the
+    contract the image case broke, and it is what a future label source gains or loses a branch on.
+    """
+    tabular_root = _root(tmp_path, "parity_tabular")
+    write_rows(tabular_root / "train.csv", _label_split(4, 16, "t", 0), COLUMNS)
+    write_rows(tabular_root / "test.csv", _label_split(6, 8, "e", 16), COLUMNS)
+    image_root = images(
+        "parity_image",
+        train={
+            "plain": [pattern(seed) for seed in range(1, 13)],
+            "marked": [pattern(seed) for seed in range(11, 15)],
+        },
+        test={
+            "plain": [pattern(seed) for seed in range(21, 23)],
+            "marked": [pattern(seed) for seed in range(31, 37)],
+        },
+    )
+
+    table = run_audit(tabular_root).by_rule("DD013")
+    folder = run_audit(image_root).by_rule("DD013")
+    assert len(table) == len(folder) == 1
+    for finding in (table[0], folder[0]):
+        assert (finding.severity, finding.status, finding.formal_impact) == (
+            Severity.HIGH,
+            AuditStatus.WARNING,
+            FormalImpact.POTENTIAL,
+        )
+        assert finding.evidence["threshold"] == 0.05
+    assert table[0].evidence["tv_distance"] == folder[0].evidence["tv_distance"] == pytest.approx(0.5)
+    assert table[0].evidence["js_distance"] == folder[0].evidence["js_distance"]
+    counters = ("train_total", "test_total", "common_support_classes")
+    assert [table[0].evidence[key] for key in counters] == [folder[0].evidence[key] for key in counters] == [16, 8, 2]
+    assert table[0].affected_count == folder[0].affected_count == 8
+
+    def shares(finding: Any) -> list[tuple[float, float]]:
+        return sorted((move["train_share"], move["test_share"]) for move in finding.evidence["largest_movers"])
+
+    assert shares(table[0]) == shares(folder[0]) == [(0.25, 0.75), (0.75, 0.25)]
+
+
 # ------------------------------------------------------------------ DD020: provenance
 def test_dd020_undeclared_provenance_is_advisory_and_what_is_declared_is_reported(
     tmp_path: Path, run_audit: Any

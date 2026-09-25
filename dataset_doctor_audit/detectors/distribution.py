@@ -233,10 +233,10 @@ def detect_label_shift(ctx: AuditContext) -> list[Any]:
 
 
 def _label_counts(ctx: AuditContext, split: str, label_column: str | None) -> dict[str, int]:
+    #: A table frame is the label source only when it actually carries the label column. An image
+    #: folder layout has no frame at all, so requiring one made the manifest path below dead code.
     frame = ctx.table(split)
-    if frame is None or frame.empty:
-        return {}
-    if label_column and label_column in frame.columns:
+    if frame is not None and not frame.empty and label_column and label_column in frame.columns:
         series = frame[label_column].dropna().astype(str)
     else:
         records = [record for record in ctx.records if record.split == split and record.label is not None]

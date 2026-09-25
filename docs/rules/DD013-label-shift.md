@@ -29,9 +29,12 @@ here is wrong with the data; what needs defending is the comparison.
 Same reference/target selection as [DD012](DD012-feature-shift.md): the recognised `train`
 split (or the first non-empty one) compared against every other non-empty split.
 
-1. Count labels per split. For tables, from the label column (`dropna`, stringified) when it
-   is readable; otherwise from the manifest's labelled records - which is the image path, since
-   a folder layout has no label column.
+1. Count labels per split. A table supplies them from the label column (`dropna`, stringified)
+   when the split has a frame *and* that frame carries the column; otherwise they come from the
+   manifest's labelled records - which is the image path, since a folder layout has no table at
+   all. That fallback is the only route labels take for `split/class/*.png` datasets, so when it
+   sat behind `if frame is None or frame.empty: return {}` the rule answered `PASS` for every image
+   dataset it was pointed at (`docs/PROJECT_STATE.md` section 4, defect 9).
 2. Union the supports so a class present only in one split is not silently dropped: its share
    on the missing side is 0, and it appears in `largest_movers`. `common_support_classes` in the
    evidence counts the labels present on *both* sides; when it is 0 the description says so,
@@ -54,6 +57,13 @@ point mass - the missing labels belong to [DD010](DD010-missing-labels.md).
   passes. That is why the finding states the arithmetic it is doing: a re-encoding and a
   genuinely disjoint class set deserve the same number and not the same interpretation. The
   categories that appear on one side only are named by [DD014](DD014-schema-drift.md).
+- **A normal-only training split fires the rule by construction.** Anomaly detection datasets
+  keep the defective cases in test and train on defect-free samples, so train is a point mass and
+  test is a mix - the upper part of the scale is the *design*. Measured at 0.759 and 0.742 on the
+  two official MVTec AD categories that the fourth real-world acceptance audited, both
+  `HIGH`/`WARNING`/`POTENTIAL`. Read it as a statement about the comparison, not a fault: for this
+  protocol the right headline is per-class or image-level AUROC on the enriched test set, and the
+  finding is what tells a reader importing a tabular habit that the shares are not comparable.
 - **Enriched test sets are a design choice.** Balancing evaluation on rare classes is standard
   practice, and this rule will fire every time. The limitation is printed on the finding:
   *"A test set deliberately enriched for rare cases is a design choice, not an error. Report
@@ -103,6 +113,25 @@ shares.
 
 Together with DD012-0001 this fixture is why the verdict is `FORMAL_EVAL_RISKY` rather than
 `FORMAL_EVAL_SAFE`, and why `exit_code()` is still 0 without `--ci`.
+
+The same rule on a folder-layout image dataset, `examples/corrupt_image`, measured from the
+images' directory names with no table anywhere in the dataset:
+
+```text
+DD013-0001 HIGH WARNING (POTENTIAL) STATISTICAL confidence=HIGH
+Label distribution shift: train vs test
+P(y) differs between train and test: total variation 0.400, Jensen-Shannon distance 0.405.
+
+class  train_share  test_share
+scratch    0.6000      1.0
+bruise     0.4000      0.0
+train_total 30   test_total 6   common_support_classes 1   threshold 0.05
+```
+
+`bruise` disappears from the test split, which is the case the union support exists for: its
+share on that side is 0, not absent. `examples/safe_image`, whose two splits carry the same
+proportions, stays `FORMAL_EVAL_SAFE` with DD013 `PASS` - the check that the image path is a
+measurement and not just a reason to fire.
 
 ## Remediation
 

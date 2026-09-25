@@ -150,6 +150,24 @@ Each entry: what was ambiguous, the reading chosen, why, and how much it matters
    *comparable* pair, which closes the one-sided case (train parses, test does not).
    `tests/test_dd005_coverage.py` pins all four plus the direction that must not change: one
    bad timestamp among good ones stays a limitation, not a refusal.
+9. **DD013 answered `PASS` for every image dataset** - found by the fourth real-world acceptance
+   (official MVTec AD, `bottle` and `leather`, CC BY-NC-SA, published 0.1.1 wheel).
+   `_label_counts` gated on `ctx.table(split)` being non-empty before it considered any other
+   source, and a `split/class/*.png` layout has no table frame, so both splits returned `{}` and
+   the loop `continue`d past every pair. The manifest branch that follows was dead code: the rule
+   had a working image path written into it and could never reach it. Measured independently from
+   the folder names, train vs test label total variation is 0.759 (`bottle`: train 209 all `good`,
+   test 20 `good` + 63 defective) and 0.742 (`leather`: train 245 all `good`, test 32 `good` + 92
+   defective) against a threshold of 0.05 - near the
+   ceiling of the statistic, reported as nothing. Fixed by treating a frame as the label source
+   only when it actually carries the label column, and falling back to record labels otherwise;
+   `tests/test_structure.py` now pins three things (8 train `ok` vs 2 `ok` + 6 `defect` fires
+   `HIGH`/`WARNING`/`POTENTIAL` at TV 0.75; proportionally identical folder labels stay silent; and
+   one 16/8 label distribution written as a table and as folder names yields the same TV, movers and
+   severity, so the two label sources are interchangeable rather than merely both populated).
+   The false-positive half matters as much as the miss: `examples/safe_image` is still
+   `FORMAL_EVAL_SAFE` after the change, so the fallback measures shares rather than inventing
+   drift from the presence of a directory name.
 
 Pattern worth remembering: each of these was invisible in the code and obvious in a *rendered
 report*. Documentation runs are a test surface - keep writing them per release. Since 2026-09-22
@@ -440,13 +458,42 @@ identifier, and DD018/DD019 measure nothing without a baseline - `NOT_RUN` is no
    split paths relative to the root, or resolve the root once at discovery) changes the path contract
    that defect 1 and A14/A15 were written about, and `docs/rules/*` quote `path` values; the workaround
    until then is to pass an absolute dataset path.
-10. Next, in order: the fourth real-world acceptance on an image dataset (MVTec AD) to put
+10. ~~Next, in order: the fourth real-world acceptance on an image dataset (MVTec AD) to put
    DD004/DD016/DD017 under the same independent-ground-truth treatment, since three tabular
    runs have now covered DD003/DD005/DD006/DD007/DD009/DD013 and the modalities are not
-   interchangeable. The release decision that item 9 used to defer is now taken: defects 5-8
-   shipped as **0.1.1** on 2026-09-25, a real-world validation patch release, and the publication
-   state is recorded in section 1. The fourth acceptance is the next unstarted step and needs its
-   own authorisation.
+   interchangeable.~~ **Done 2026-09-25 on the official CC BY-NC-SA `bottle` and `leather`
+   archives** (`F:\DatasetDoctorWork\realworld\mvtec-ad`, published 0.1.1 wheel, `--fingerprint
+   full`, verdicts `FORMAL_EVAL_RISKY` on both). The zero-preparation requirement holds: discovery
+   reads the official `train/<class>/*.png` + `test/<class>/*.png` layout as-is with no config and
+   no conversion, and `ground_truth/` (the binary masks, single-channel) never entered a split -
+   292 and 369 samples, which is `train + test` and not the 357 and 463 files on disk. All three
+   image rules were checked in both directions against a re-implementation that does not import
+   this package - O(N^2) pHash sweep, numpy luma statistics, counts from folder names - and each
+   has a known-answer fixture built by copying real images: one truncated file, one re-encoded
+   cross-split pair (identical pixels, different SHA256, pHash distance 0), and a constant +30
+   luma shift on twelve brightness-matched frames. One P1 came out of it: defect 9 above.
+11. Registered on 2026-09-25 by that acceptance, **not** fixed (both P2, both conservative):
+   - **A non-split directory inside the dataset root disappears from the report.** MVTec ships
+     `bottle/{train,test,ground_truth}` plus `license.txt` and `readme.txt`; the audit enumerates
+     209 + 83 = 292 samples, lists `skipped_files: []` and `unreadable_files: []`, and never
+     mentions the 63 mask or 2 text files it did not read. The behaviour is right - masks are not
+     samples, and treating them as images would be the actual defect - but the evidence says
+     "nothing was skipped", which reads as "nothing else is here". The honest entry is a count of
+     directories that matched no split pattern. Registered, not patched: what counts as coverage
+     has to stay a claim the report can prove, and a new field there is a schema decision.
+   - **DD004's `affected_count` counts pair slots, not samples.** On clean `bottle` it reports
+     142 for 71 cross-split pairs (142 slots, 84 distinct samples), and its train-internal
+     finding reports 748 - more than the 209-frame split it is describing - because a sample in
+     twenty pairs is counted twenty times. The pairs themselves verified exactly (20/20
+     re-computed to the same Hamming distance), so this is a denominator question, not a
+     correctness one. A user reads `affected_count` as "how many of my images", and DD003 -
+     which reports groups - uses the same field name for a different unit.
+12. ~~A fifth real-world acceptance dataset~~ **Stop here.** Four runs covered both modalities,
+   and the marginal finding per dataset is falling: acceptance #4 found one P1 and two P2s in
+   two categories, and got there with a fixture set that will not generalise to a fifth data
+   domain. The next line of work is Experiment Doctor / ML Research, per the acceptance's own
+   recommendation. Open code-side work worth doing first is small and already specified: the two
+   P2 counters in item 11, and the relative-path contract in item 9.
 
 ## 11. Scratch state - disposition
 
