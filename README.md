@@ -95,12 +95,12 @@ evidence block.
 
 ## Quick Start
 
-> **Release status:** Version 0.1.1 is available on
-> [PyPI](https://pypi.org/project/dataset-doctor-audit/0.1.1/). Install it with
-> `pip install dataset-doctor-audit`. 0.1.1 changes detection behaviour only - three coverage
-> and claim-semantics fixes found by driving the published 0.1.0 wheel over real datasets; see
-> `CHANGELOG.md`. The already-published 0.1.0 and 0.1.1 files are immutable, so the pre-release
-> wording in the 0.1.0 README stays where it was published.
+> **Release status:** Version 0.1.2 is available on
+> [PyPI](https://pypi.org/project/dataset-doctor-audit/0.1.2/). Install it with
+> `pip install dataset-doctor-audit`. 0.1.2 is a single detection fix - DD013 now measures label
+> shift for image-folder datasets from manifest labels instead of reporting `PASS`; see
+> `CHANGELOG.md`. The already-published 0.1.0, 0.1.1 and 0.1.2 files are immutable, so the
+> pre-release wording in the 0.1.0 README stays where it was published.
 >
 > **Name collision, and why every one of our namespaces carries the `-audit` suffix.** An
 > unrelated package owns `dataset-doctor` on PyPI (MIT, 1.0.1, uploaded 2026-03-25 - a tabular

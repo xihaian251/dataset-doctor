@@ -2,8 +2,8 @@
 
 Sections 1 to 3 retain the measured 2026-09-22 local release-candidate record; section 4 records
 the completed 0.1.0 publication on 2026-09-23. `docs/PROJECT_STATE.md` section 7 carries the
-older local measurements. Re-run the applicable gates for 0.1.1 rather than treating either
-release's results as proof for a future artifact.
+older local measurements. Re-run the applicable gates for the next release rather than treating any
+of 0.1.0, 0.1.1 and 0.1.2 as proof for a future artifact.
 
 ## 1. Reproduce the release locally
 
@@ -167,6 +167,57 @@ Same sequence, one patch release. Every value below is from this run.
       coverage semantics, already measured at scale in Acceptance #3; the 0.1.0 scale numbers stand.
 - [x] Registered while verifying, **not** fixed: a relative dataset path costs a single-table
       directory its leakage answers (PROJECT_STATE section 10 item 9). Present identically in 0.1.0.
+
+## 4c. Publish 0.1.2 (completed 2026-09-26, 00:01 +08:00)
+
+One patch release, the DD013 image-folder fix from the fourth real-world acceptance. Same sequence
+as 4b; every value below is measured from this run.
+
+- [x] `main` received the fix [`117d161`](https://github.com/xihaian251/dataset-doctor/commit/117d161),
+      the release commit [`107504e`](https://github.com/xihaian251/dataset-doctor/commit/107504e) and the
+      publisher-retarget commit `84c6e6a`, no force push. [CI run 36154213424](https://github.com/xihaian251/dataset-doctor/actions/runs/36154213424)
+      passed 8/8 on `107504e`; [run 36156570701](https://github.com/xihaian251/dataset-doctor/actions/runs/36156570701)
+      passed 8/8 on `84c6e6a`.
+- [x] Built from `git archive 107504e` in a throwaway venv on another drive (backend
+      `hatchling 1.32.4`, read back from the wheel's own `WHEEL` metadata); `twine check` both `PASSED`.
+- [x] Artefact equals commit: wheel 37 entries / 32 tracked modules and sdist 501 entries / 500
+      tracked files byte-compared against `git show 107504e:<path>`; the only reported non-match is the
+      relocated `dist-info/licenses/LICENSE`, verified identical to its blob separately.
+- [x] Local build reproducible: unchanged across two `python -m build` runs. Wheel
+      `d9cc458a…` (146 928 B), sdist `d785c10a2f5f6f04d57d64a0d955e4c2afe386a81133517029900342a8f82ecb`
+      (440 442 B).
+- [x] [TestPyPI run 36156039925](https://github.com/xihaian251/dataset-doctor/actions/runs/36156039925)
+      built `107504e` on `ubuntu-latest`: sdist hash **equal** to the local one, wheel hash
+      **different** (`3d7c73572d09985715de8af51dbe9e45c266a1dcee3829f823fc89dc084a9f1d`) at the same
+      146 928 bytes - the 0.1.1 pattern, and why the publisher pins the Linux build.
+- [x] Annotated `v0.1.2` resolves to `107504ed7d2f0caffea9dbc28ec25225a532fdb0` (checked with
+      `git rev-parse v0.1.2^{}`), the release commit, not the retarget commit.
+- [x] [GitHub Release v0.1.2](https://github.com/xihaian251/dataset-doctor/releases/tag/v0.1.2)
+      published, not draft, not prerelease, notes exactly the three approved lines.
+      **Difference from 4b recorded deliberately: this Release carries no binary assets.** The release
+      form's attachment input is not reachable by the automation available here, and the release
+      baseline forbids manual file uploads on the publishing path; the verified bytes are instead in
+      the workflow artifacts and on PyPI, and the asset digests that 4b could cite are absent here.
+- [x] [Production run 36157278939](https://github.com/xihaian251/dataset-doctor/actions/runs/36157278939)
+      rebuilt frozen `107504e`, asserted name/version, and matched both pinned hashes under
+      `sha256sum --check --strict` (`…whl: OK`, `…tar.gz: OK`), then uploaded through the existing
+      Trusted Publishing (OIDC + `pypi` environment approval). The publish step's own in-toto
+      `https://docs.pypi.org/attestations/publish/v1` statements name exactly the two hashes above.
+      No `twine upload`, no API token, no second pipeline.
+- [x] PyPI JSON for 0.1.2 lists both files at those hashes and sizes, `Requires-Python: >=3.11`,
+      `License-Expression: Apache-2.0`, not yanked, and 0.1.2 is the project's latest version.
+- [x] A fresh venv outside the checkout on another drive installed
+      `dataset-doctor-audit[image]==0.1.2` from production PyPI: import resolves inside
+      `site-packages`, `__version__` is `0.1.2`, `pip check` clean, Python 3.13.1. `pip download
+      --no-deps --no-cache-dir` of the same version returned a wheel whose hash equals the pinned one,
+      which is what proves the index rather than a local path supplied it.
+- [x] DD013 verified on the published bytes with synthetic fixtures: an image folder whose test split
+      is label-enriched reports `HIGH` / `WARNING` / `POTENTIAL` at TV 0.75 (0.1.1 said `PASS`), a
+      proportionally identical folder stays `PASS`, and the tabular path still reports its pre-fix
+      TV 0.350 unchanged. No MVTec was re-downloaded.
+- [ ] Not re-run for 0.1.2, deliberately: the four real-world datasets of acceptances #1-#4 and the
+      opt-in scale gate. The change is confined to which label source DD013 reads; the acceptance
+      measurements that found it stand in PROJECT_STATE.
 
 ## 5. Historical local release candidate - built 2026-09-22, not the published files
 
