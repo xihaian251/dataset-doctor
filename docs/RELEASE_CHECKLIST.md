@@ -114,6 +114,60 @@ Then record what was actually measured, in this order:
       report formats passed. The published 0.1.0 README retains its obsolete pre-release sentence;
       `main` corrects it for the next package release, without replacing 0.1.0.
 
+## 4b. Publish 0.1.1 (completed 2026-09-25)
+
+Same sequence, one patch release. Every value below is from this run.
+
+- [x] `main` received the Acceptance #3 fix [`81db92d`](https://github.com/xihaian251/dataset-doctor/commit/81db92d)
+      and the release commit [`6ba9412`](https://github.com/xihaian251/dataset-doctor/commit/6ba9412)
+      without a force push; [CI run 36129458287](https://github.com/xihaian251/dataset-doctor/actions/runs/36129458287)
+      passed 8/8 on `6ba9412`, and [run 36130051554](https://github.com/xihaian251/dataset-doctor/actions/runs/36130051554)
+      passed 8/8 on the later publisher-retarget commit `8006f41`.
+- [x] Built from `git archive 6ba9412` (exact blobs, not a checkout - section 2's CRLF bullet), in a
+      throwaway venv on another drive holding only `build` + `twine`, backend `hatchling 1.32.4`;
+      `python -m twine check dist/*` both `PASSED`.
+- [x] Artefact equals commit: 500 sdist entries and 32 wheel package modules byte-identical to
+      `git show 6ba9412:<path>`; the only non-matching wheel entry is the generated
+      `entry_points.txt`. Wheel holds 32 modules incl. the four `reports/` files, and the sdist holds
+      `LICENSE`, `README.md`, `docs/`, `examples/`, `tests/`, `.github/`.
+- [x] Local build reproducible: both SHA-256 values unchanged across two `python -m build` runs.
+      Wheel `40cef49c06a7ed004a3b6ebe2f1915d0bdc1030ddfe70ede0f44fde08bd45a07` (146 773 B),
+      sdist `d1d2b43388a782594f259e27927876838c4e5acabd7ae6754b505215492f710e` (435 015 B).
+- [x] [TestPyPI run 36129723666](https://github.com/xihaian251/dataset-doctor/actions/runs/36129723666)
+      built the same commit on `ubuntu-latest`: sdist hash **equal** to the local one, wheel hash
+      **different** (`e99593b2af3d065945cef9479ee833ed38d1999d0816c30a074d21e828c35b10`) at the same
+      146 773 bytes - zip metadata is platform-dependent, which is exactly why the production
+      workflow pins the hashes of the frozen Linux build rather than any local artefact.
+- [x] Annotated `v0.1.1` (tag object `ae03c28`) resolves to `6ba94129566ba86fd53a1a0e09dc03fd77144328`
+      - the commit TestPyPI built and the commit the publisher pins, not the later retarget commit,
+      mirroring 0.1.0. Local and remote tag objects agree.
+- [x] [GitHub Release v0.1.1](https://github.com/xihaian251/dataset-doctor/releases/tag/v0.1.1)
+      published (not draft, not prerelease) from that tag with the two verified files; GitHub reports
+      both asset digests equal to the TestPyPI artifact.
+- [x] [Production run 36130358950](https://github.com/xihaian251/dataset-doctor/actions/runs/36130358950)
+      rebuilt frozen `6ba9412`, asserted name/version and both pinned hashes under
+      `sha256sum --check --strict`, and uploaded through the existing Trusted Publishing
+      (OIDC + `pypi` environment approval) - no `twine upload`, no API token, no second pipeline.
+      Its artifact bytes equal the PyPI JSON digests, the release assets and the TestPyPI files.
+- [x] Two fresh environments outside the checkout, neither with the repository on `sys.path`:
+      the locally built wheel (`--help`, safe audit `FORMAL_EVAL_SAFE` exit 0 with three report
+      formats, `unsafe_target_leakage --ci` `FORMAL_EVAL_INVALID` exit 1, `--save-snapshot` then
+      `--baseline` with DD018/DD019 `PASS`, `fingerprint`, `diff`, `report` re-render, `pip check`
+      clean), and the sdist rebuilt from source at the same two verdicts. A third environment then
+      installed `dataset-doctor-audit==0.1.1` **from PyPI** and reproduced the same smoke set.
+- [x] Both public P0s from Acceptance #3 verified gone on the published bytes, on 90-row synthetic
+      fixtures rather than a million-row re-run: a declared group column with no usable entity is
+      `DD005 INCONCLUSIVE` / `HIGH` / `BLOCKING` with `rows_checked: 0` and the audit verdict
+      `INCONCLUSIVE`; a declared time column that parses nowhere is `DD006 INCONCLUSIVE` / `HIGH` /
+      `BLOCKING` with `parseable_timestamps: 0` and verdict `INCONCLUSIVE`, with DD005 `PASS` so the
+      attribution is single. The installed 0.1.0 wheel on the identical fixtures reports
+      `DD005 PASS` / `FORMAL_EVAL_SAFE` and `DD006 PASS` / `FORMAL_EVAL_SAFE`.
+- [ ] Not re-run for 0.1.1, deliberately: the opt-in scale gate (`DATASET_DOCTOR_SCALE=1
+      pytest tests/test_scale.py`) and the million-row real-world audits. The detector change is
+      coverage semantics, already measured at scale in Acceptance #3; the 0.1.0 scale numbers stand.
+- [x] Registered while verifying, **not** fixed: a relative dataset path costs a single-table
+      directory its leakage answers (PROJECT_STATE section 10 item 9). Present identically in 0.1.0.
+
 ## 5. Historical local release candidate - built 2026-09-22, not the published files
 
 | Item | Measured value |

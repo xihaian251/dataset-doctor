@@ -13,7 +13,7 @@ threshold, a rule id, or a claim in the README.
 
 | Area | State |
 | --- | --- |
-| Package | `dataset-doctor-audit` 0.1.1 in this tree (importable `dataset_doctor_audit`, CLI `dataset-doctor-audit`); the published index still offers 0.1.0 until this release ships |
+| Package | `dataset-doctor-audit` 0.1.1 in this tree and on the index (importable `dataset_doctor_audit`, CLI `dataset-doctor-audit`) |
 | Rules | DD001-DD021 implemented and registered (`rules.py`), 21/21 have `docs/rules/*.md` |
 | Modalities | Tabular (CSV/TSV/Parquet/Excel incl. multi-sheet) + image folders |
 | Reports | `report.json` (frozen field set), `report.md`, self-contained `report.html` |
@@ -24,9 +24,10 @@ threshold, a rule id, or a claim in the README.
 | Gates (2026-09-22, re-run 2026-09-25 for 0.1.1) | `ruff format --check .` "107 files already formatted" · `ruff check .` "All checks passed!" · `mypy --python-version=3.12 dataset_doctor_audit` "no issues found in 32 source files" · `pytest` green with the scale test skipped. The 2026-09-25 run re-measured all four on the 0.1.1
 tree; the local type gate used the `--python-version=3.12` override rather than downgrading numpy
 in that environment. mypy is green **only** with `numpy<2.5` installed: numpy 2.5.x vendors PEP 695 `type` statements that mypy 2.3.1 cannot parse while `python_version = "3.11"`, and the run aborts before it reaches our files. The CI static job installs that ceiling; a local `pip install -e ".[dev]"` still gets numpy 2.5.3, so run the type gate with the same ceiling until upstream resolves it |
-| Release engineering | Public repository on `main`; CI 8/8 green at [`c059adf`](https://github.com/xihaian251/dataset-doctor/actions/runs/35821169961). TestPyPI and production Trusted Publishing workflows have run successfully; private vulnerability reporting is enabled |
+| Release engineering | Public repository on `main`; CI 8/8 green at [`c059adf`](https://github.com/xihaian251/dataset-doctor/actions/runs/35821169961) and again at [`8006f41`](https://github.com/xihaian251/dataset-doctor/actions/runs/36130358950) for 0.1.1. TestPyPI and production Trusted Publishing workflows have run successfully; private vulnerability reporting is enabled |
 | Published 0.1.0 | [PyPI](https://pypi.org/project/dataset-doctor-audit/0.1.0/) contains the verified wheel and sdist. The [production run](https://github.com/xihaian251/dataset-doctor/actions/runs/35858748946) built frozen commit `31200147cc8c9d2cd51c4bd58a1c17004c6fcbb2`; annotated `v0.1.0` points to that commit, and the [GitHub Release](https://github.com/xihaian251/dataset-doctor/releases/tag/v0.1.0) carries the same two files |
-| Next release | 0.1.1 prepared 2026-09-25: defects 5-8 released as a real-world validation patch (no new rule, no changed severity default, no changed verdict algorithm). `pyproject.toml` is the version source of truth for the artefact and `__version__` the one the reports carry; `tests/test_packaging.py` now fails if the two disagree. Publication state moves to the row above once PyPI has the files |
+| Published 0.1.1 | [PyPI](https://pypi.org/project/dataset-doctor-audit/0.1.1/) carries wheel `e99593b2af3d065945cef9479ee833ed38d1999d0816c30a074d21e828c35b10` (146 773 B) and sdist `d1d2b43388a782594f259e27927876838c4e5acabd7ae6754b505215492f710e` (435 015 B). [TestPyPI run 36129723666](https://github.com/xihaian251/dataset-doctor/actions/runs/36129723666) produced those bytes first; [production run 36130358950](https://github.com/xihaian251/dataset-doctor/actions/runs/36130358950) rebuilt frozen commit `6ba94129566ba86fd53a1a0e09dc03fd77144328` and matched both hashes under `sha256sum --check --strict`. Annotated `v0.1.1` (`ae03c28`) points at `6ba9412`, and the [GitHub Release](https://github.com/xihaian251/dataset-doctor/releases/tag/v0.1.1) carries the same two files. A fresh environment installed `dataset-doctor-audit==0.1.1` from PyPI and reproduced both P0 fixes |
+| Next release | 0.1.1 shipped 2026-09-25: defects 5-8 released as a real-world validation patch (no new rule, no changed severity default, no changed verdict algorithm). `pyproject.toml` is the version source of truth for the artefact and `__version__` the one the reports carry; `tests/test_packaging.py` fails if the two disagree. Nothing is scheduled: the fourth real-world acceptance (MVTec AD, image modality) and any 0.1.2 scope each need their own authorisation, and defect 9 below is the first thing a 0.1.2 conversation should consider |
 
 V0.1 rule set (`rules.py::V01_RULES`) is `V01_RULES = {DD001, DD002, DD003, DD005, DD009, DD011,
 DD012, DD014, DD016, DD018, DD019}` - the leakage-critical surface named by spec section 69. It is
@@ -422,13 +423,30 @@ identifier, and DD018/DD019 measure nothing without a baseline - `NOT_RUN` is no
      not guess which of two sheets is which split), so the discovery UX for a fresh UCI download
      is "read the docs first". Registered as UX observation only, per the run's own instruction
      not to change code for it.
-9. Next, in order: the fourth real-world acceptance on an image dataset (MVTec AD) to put
+9. Registered on 2026-09-25 by the 0.1.1 release verification, **not** fixed: **a relative dataset
+   path costs a single-table directory its leakage answers.** `discovery.py:170` registers the one
+   pseudo-split for a directory whose table carries the split column as `SplitSpec(path=str(root))`,
+   and `adapters/tabular.py:41-51` re-prefixes any non-absolute split path onto the adapter root, so
+   `audit ./mydataset` looks for `./mydataset/mydataset`. The path does not exist, DD016 reports each
+   split as an unreadable file, and the cross-split rules answer INCONCLUSIVE instead of the planted
+   FAIL. Measured with the same installed 0.1.1 wheel on the shipped `leaky_patient_dataset` (309 rows,
+   planted entity overlap, temporal inversion and deterministic relabelling): from a relative path it
+   reports `FORMAL_EVAL_RISKY`, 3 DD016 "Unreadable table file(s)", and DD005/DD006/DD007/DD012
+   INCONCLUSIVE; the same command with the absolute path reports `FORMAL_EVAL_INVALID` with DD005
+   `CRITICAL` + 2 `HIGH` FAIL, DD006 `FAIL` and DD007 x3, which is exactly `examples/RESULTS.md`. It
+   behaves identically on 0.1.0, so it is not a 0.1.1 regression, and the direction is conservative -
+   DD016 fires and the report is never `FORMAL_EVAL_SAFE` over data it could not read.
+   `adapters/imagefolder.py:40` carries the same guard. Left alone because the honest repair (store
+   split paths relative to the root, or resolve the root once at discovery) changes the path contract
+   that defect 1 and A14/A15 were written about, and `docs/rules/*` quote `path` values; the workaround
+   until then is to pass an absolute dataset path.
+10. Next, in order: the fourth real-world acceptance on an image dataset (MVTec AD) to put
    DD004/DD016/DD017 under the same independent-ground-truth treatment, since three tabular
    runs have now covered DD003/DD005/DD006/DD007/DD009/DD013 and the modalities are not
    interchangeable. The release decision that item 9 used to defer is now taken: defects 5-8
-   ship as **0.1.1**, a real-world validation patch release, and the publication state is
-   recorded in section 1 once the package is on PyPI. The fourth acceptance is the next
-   unstarted step and needs its own authorisation.
+   shipped as **0.1.1** on 2026-09-25, a real-world validation patch release, and the publication
+   state is recorded in section 1. The fourth acceptance is the next unstarted step and needs its
+   own authorisation.
 
 ## 11. Scratch state - disposition
 
