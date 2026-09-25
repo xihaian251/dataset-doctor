@@ -44,23 +44,19 @@ All notable changes to Dataset Doctor are documented here. The format follows
   the dtype inference that follows) plus a decision about whether a guessed parse may block, which
   is a release, not a patch inside an acceptance run.
 
+## 0.1.2 - 2026-09-25
+
+One bug fix, found by the fourth real-world acceptance (official MVTec AD `bottle` and `leather`,
+CC BY-NC-SA) driving the installed 0.1.1 wheel, and reproduced on synthetic fixtures before being
+fixed. Built and verified on Windows 11 / Python 3.13.1: `pytest` 234 passed, 30 skipped,
+4 warnings in 67.03 s · `ruff format --check .` 107 files already formatted · `ruff check .`
+All checks passed · `mypy --python-version=3.13 dataset_doctor_audit` no issues in 32 source files.
+
 ### Fixed
 
-- **DD013 reported `PASS` for every image dataset, including the official MVTec AD archives.**
-  `_label_counts` asked for a table frame before it looked anywhere else, and returned `{}` when a
-  split had none - which is every split of every `split/class/*.png` layout. Both halves of the
-  comparison were therefore empty, `detect_label_shift` `continue`d over every target, and the rule
-  published a PASS for a dataset whose labels it had enumerated fine for DD011. On the fourth
-  real-world acceptance (MVTec AD `bottle` and `leather`, CC BY-NC-SA, audited with the published
-  0.1.1 wheel) the independently measured total variation between train and test label
-  proportions is 0.759 and 0.742 - the maximum this rule can express is 1.000 - and the report said
-  nothing. Reproduced before fixing with a synthetic fixture in `tests/test_structure.py` (32x32
-  tiles; train 8 images all `ok`, test 8 images split 2 `ok` + 6 `defect`, TV 0.75): the new test
-  fails on the old code with `by_rule("DD013") == []`. After the fix MVTec `bottle` and `leather` each report one DD013-0001
-  `HIGH` / `WARNING` / `POTENTIAL` with the measured TV and its `largest_movers`, both verdicts stay
-  `FORMAL_EVAL_RISKY`, and the proportional-labels control fixture stays silent. `examples/safe_image`
-  remains `FORMAL_EVAL_SAFE`, so the fallback does not manufacture shifts where the shares match; the
-  image examples that do shift gained their DD013 rows in the regenerated `examples/RESULTS.md`.
+- DD013 now measures label distributions for image-folder datasets using manifest labels instead of
+  incorrectly returning `PASS` when no tabular frame exists. No thresholds, severity levels,
+  formal-impact rules or verdict semantics changed.
 
 ## 0.1.1 - 2026-09-25
 
