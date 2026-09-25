@@ -13,18 +13,20 @@ threshold, a rule id, or a claim in the README.
 
 | Area | State |
 | --- | --- |
-| Package | `dataset-doctor-audit` 0.1.0, importable `dataset_doctor_audit`, CLI `dataset-doctor-audit` |
+| Package | `dataset-doctor-audit` 0.1.1 in this tree (importable `dataset_doctor_audit`, CLI `dataset-doctor-audit`); the published index still offers 0.1.0 until this release ships |
 | Rules | DD001-DD021 implemented and registered (`rules.py`), 21/21 have `docs/rules/*.md` |
 | Modalities | Tabular (CSV/TSV/Parquet/Excel incl. multi-sheet) + image folders |
 | Reports | `report.json` (frozen field set), `report.md`, self-contained `report.html` |
 | Commands | `audit`, `scan`, `init`, `split`, `snapshot`, `diff`, `fingerprint`, `report`, `rules`, `show`, `demo` |
 | Exit codes | 0 ok · 1 findings gate · 2 usage/input error · 3 internal error · 130 on Ctrl+C |
 | Fixtures | 13 in `examples/`, each with `PLANTED_FAULTS.md`; `examples/RESULTS.md` regenerates via `python examples/build.py` |
-| Tests | 171 test functions / 260 collected items: 230 passed, 30 skipped, 4 warnings in 63.12 s (2026-09-25 re-run with the acceptance-#3 DD005/DD006 coverage fixes and their two test files, Python 3.13.1, numpy 2.5.3, pandas 3.0.6, `pytest -o addopts="--tb=line -q"`; the run before it measured 84.83 s on the same command, so read ±15 s as machine load, not progress. The function count is `grep -c '^def test_' tests/test_*.py`, which is higher than the 154 previously recorded here - that figure was stale, not this one). Every skip is intentional: the opt-in scale test, plus parametrised documentation checks for rules that make no V0.1 or modality claim. The 4 warnings are two pre-existing pandas/numpy notices plus dateutil format inference on a deliberately unparseable column |
-| Gates (2026-09-22) | `ruff format --check .` "103 files already formatted" · `ruff check .` "All checks passed!" · `mypy dataset_doctor_audit` "no issues found in 32 source files" · `pytest` green with the scale test skipped. mypy is green **only** with `numpy<2.5` installed: numpy 2.5.x vendors PEP 695 `type` statements that mypy 2.3.1 cannot parse while `python_version = "3.11"`, and the run aborts before it reaches our files. The CI static job installs that ceiling; a local `pip install -e ".[dev]"` still gets numpy 2.5.3, so run the type gate with the same ceiling until upstream resolves it |
+| Tests | 172 test functions / 261 collected items: 231 passed, 30 skipped, 4 warnings in 59.91 s (2026-09-25 release-gate run on the 0.1.1 tree with the acceptance-#3 DD005/DD006 coverage fixes and their test files, Python 3.13.1, numpy 2.5.3, pandas 3.0.6, `pytest -o addopts="--tb=line -q"`; an earlier run of the same suite measured 63.12 s, so read ±15 s as machine load, not progress. The function count is `grep -c '^def test_' tests/test_*.py`, which is higher than the 154 previously recorded here - that figure was stale, not this one). Every skip is intentional: the opt-in scale test, plus parametrised documentation checks for rules that make no V0.1 or modality claim. The 4 warnings are two pre-existing pandas/numpy notices plus dateutil format inference on a deliberately unparseable column |
+| Gates (2026-09-22, re-run 2026-09-25 for 0.1.1) | `ruff format --check .` "107 files already formatted" · `ruff check .` "All checks passed!" · `mypy --python-version=3.12 dataset_doctor_audit` "no issues found in 32 source files" · `pytest` green with the scale test skipped. The 2026-09-25 run re-measured all four on the 0.1.1
+tree; the local type gate used the `--python-version=3.12` override rather than downgrading numpy
+in that environment. mypy is green **only** with `numpy<2.5` installed: numpy 2.5.x vendors PEP 695 `type` statements that mypy 2.3.1 cannot parse while `python_version = "3.11"`, and the run aborts before it reaches our files. The CI static job installs that ceiling; a local `pip install -e ".[dev]"` still gets numpy 2.5.3, so run the type gate with the same ceiling until upstream resolves it |
 | Release engineering | Public repository on `main`; CI 8/8 green at [`c059adf`](https://github.com/xihaian251/dataset-doctor/actions/runs/35821169961). TestPyPI and production Trusted Publishing workflows have run successfully; private vulnerability reporting is enabled |
 | Published 0.1.0 | [PyPI](https://pypi.org/project/dataset-doctor-audit/0.1.0/) contains the verified wheel and sdist. The [production run](https://github.com/xihaian251/dataset-doctor/actions/runs/35858748946) built frozen commit `31200147cc8c9d2cd51c4bd58a1c17004c6fcbb2`; annotated `v0.1.0` points to that commit, and the [GitHub Release](https://github.com/xihaian251/dataset-doctor/releases/tag/v0.1.0) carries the same two files |
-| Next release | Prepare 0.1.1 separately; no version bump, code change or new package upload is part of this post-release documentation update |
+| Next release | 0.1.1 prepared 2026-09-25: defects 5-8 released as a real-world validation patch (no new rule, no changed severity default, no changed verdict algorithm). `pyproject.toml` is the version source of truth for the artefact and `__version__` the one the reports carry; `tests/test_packaging.py` now fails if the two disagree. Publication state moves to the row above once PyPI has the files |
 
 V0.1 rule set (`rules.py::V01_RULES`) is `V01_RULES = {DD001, DD002, DD003, DD005, DD009, DD011,
 DD012, DD014, DD016, DD018, DD019}` - the leakage-critical surface named by spec section 69. It is
@@ -423,9 +425,10 @@ identifier, and DD018/DD019 measure nothing without a baseline - `NOT_RUN` is no
 9. Next, in order: the fourth real-world acceptance on an image dataset (MVTec AD) to put
    DD004/DD016/DD017 under the same independent-ground-truth treatment, since three tabular
    runs have now covered DD003/DD005/DD006/DD007/DD009/DD013 and the modalities are not
-   interchangeable. After that, decide 0.1.1 as a release (defects 5-8 plus the documentation
-   they moved), and return to the Experiment Doctor / mainline ML research track. No push, tag,
-   release or PyPI upload is authorised by any of these acceptance runs.
+   interchangeable. The release decision that item 9 used to defer is now taken: defects 5-8
+   ship as **0.1.1**, a real-world validation patch release, and the publication state is
+   recorded in section 1 once the package is on PyPI. The fourth acceptance is the next
+   unstarted step and needs its own authorisation.
 
 ## 11. Scratch state - disposition
 

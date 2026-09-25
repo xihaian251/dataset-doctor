@@ -44,6 +44,22 @@ All notable changes to Dataset Doctor are documented here. The format follows
   the dtype inference that follows) plus a decision about whether a guessed parse may block, which
   is a release, not a patch inside an acceptance run.
 
+## 0.1.1 - 2026-09-25
+
+Real-world validation patch release, not a feature release. Every entry below was found by one of
+the three real-world acceptance runs (UCI Adult, UCI HAR, UCI Online Retail II) driving the
+installed 0.1.0 wheel, and reproduced on small synthetic fixtures inside this repository. No rule
+id, default severity, `formal_impact`, threshold or verdict algorithm changed, and no rule was
+added. Built and verified on Windows 11 / Python 3.13.1: `pytest` 231 passed, 30 skipped,
+4 warnings in 59.91 s · `ruff format --check .` 107 files already formatted · `ruff check .`
+All checks passed · `mypy --python-version=3.12 dataset_doctor_audit` no issues in 32 source
+files.
+
+### Documentation
+
+- Post-release documentation now points to the published 0.1.0 package and the real repository.
+  This does not change code, version metadata or the immutable 0.1.0 files on PyPI.
+
 ### Fixed
 
 - **DD005 and DD006 could report a clean check on data they had not compared.** Found by the

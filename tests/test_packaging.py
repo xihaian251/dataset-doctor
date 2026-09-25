@@ -101,3 +101,14 @@ def test_the_build_targets_cover_the_files_a_distributor_needs() -> None:
     missing = {"dataset_doctor_audit", "docs", "examples", "tests", "README.md", "CHANGELOG.md", "LICENSE"} - sdist
 
     assert missing == set(), f"{sorted(missing)} would be absent from the sdist"
+
+
+def test_the_version_the_reports_carry_is_the_declared_package_version() -> None:
+    """`tool_version` is written into every report and snapshot, and DD018/DD019 compare those.
+
+    Two literals that drift make the same release look like two different detectors to a
+    user's own baseline history, which is why the release cannot leave them unbonded.
+    """
+    from dataset_doctor_audit import __version__
+
+    assert __version__ == _pyproject()["project"]["version"]

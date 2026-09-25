@@ -15,7 +15,7 @@ build-backend = "hatchling.build"
 # per-dataset workdir is `.dataset-doctor/`, and the default report dir is
 # `dataset-doctor-report/`. See docs/adr/0006.
 name = "dataset-doctor-audit"
-version = "0.1.0"
+version = "0.1.1"
 description = "Detect data leakage before it corrupts your ML experiment. Local-first ML dataset reliability and leakage auditing CLI."
 readme = "README.md"
 requires-python = ">=3.11"
