@@ -20,7 +20,7 @@ threshold, a rule id, or a claim in the README.
 | Commands | `audit`, `scan`, `init`, `split`, `snapshot`, `diff`, `fingerprint`, `report`, `rules`, `show`, `demo` |
 | Exit codes | 0 ok · 1 findings gate · 2 usage/input error · 3 internal error · 130 on Ctrl+C |
 | Fixtures | 13 in `examples/`, each with `PLANTED_FAULTS.md`; `examples/RESULTS.md` regenerates via `python examples/build.py` |
-| Tests | 154 test functions / 243 collected items: 213 passed, 30 skipped, 1 warning in 74.66 s (2026-09-22 re-run after `29beb75`, Python 3.13.1, numpy 2.5.3, pandas 3.0.6, `pytest -o addopts="--tb=line -q"`; the run before it measured 86.99 s on the same command, so read ±15 s as machine load, not progress). Every skip is intentional: the opt-in scale test, plus parametrised documentation checks for rules that make no V0.1 or modality claim |
+| Tests | 171 test functions / 260 collected items: 230 passed, 30 skipped, 4 warnings in 63.12 s (2026-09-25 re-run with the acceptance-#3 DD005/DD006 coverage fixes and their two test files, Python 3.13.1, numpy 2.5.3, pandas 3.0.6, `pytest -o addopts="--tb=line -q"`; the run before it measured 84.83 s on the same command, so read ±15 s as machine load, not progress. The function count is `grep -c '^def test_' tests/test_*.py`, which is higher than the 154 previously recorded here - that figure was stale, not this one). Every skip is intentional: the opt-in scale test, plus parametrised documentation checks for rules that make no V0.1 or modality claim. The 4 warnings are two pre-existing pandas/numpy notices plus dateutil format inference on a deliberately unparseable column |
 | Gates (2026-09-22) | `ruff format --check .` "103 files already formatted" · `ruff check .` "All checks passed!" · `mypy dataset_doctor_audit` "no issues found in 32 source files" · `pytest` green with the scale test skipped. mypy is green **only** with `numpy<2.5` installed: numpy 2.5.x vendors PEP 695 `type` statements that mypy 2.3.1 cannot parse while `python_version = "3.11"`, and the run aborts before it reaches our files. The CI static job installs that ceiling; a local `pip install -e ".[dev]"` still gets numpy 2.5.3, so run the type gate with the same ceiling until upstream resolves it |
 | Release engineering | Public repository on `main`; CI 8/8 green at [`c059adf`](https://github.com/xihaian251/dataset-doctor/actions/runs/35821169961). TestPyPI and production Trusted Publishing workflows have run successfully; private vulnerability reporting is enabled |
 | Published 0.1.0 | [PyPI](https://pypi.org/project/dataset-doctor-audit/0.1.0/) contains the verified wheel and sdist. The [production run](https://github.com/xihaian251/dataset-doctor/actions/runs/35858748946) built frozen commit `31200147cc8c9d2cd51c4bd58a1c17004c6fcbb2`; annotated `v0.1.0` points to that commit, and the [GitHub Release](https://github.com/xihaian251/dataset-doctor/releases/tag/v0.1.0) carries the same two files |
@@ -120,6 +120,33 @@ Each entry: what was ambiguous, the reading chosen, why, and how much it matters
    `affected_sample_ids_truncated`; severity, status, `formal_impact`, `affected_count`, description
    and evidence are byte-identical before and after on the HAR diagnostic split.
    `tests/test_dd005_locators.py` pins both directions.
+
+7. **DD005 certified entity disjointness on rows it had not read** - found by the third
+   real-world acceptance (UCI Online Retail II, 1 067 371 rows, 22.77 % of them with no
+   `CustomerID`) on the published 0.1.0 wheel, and reproducible on 10-row synthetic data.
+   Null/empty entity values were skipped without a counter, so two states printed the same
+   way: a declared group column empty in *every* row gave `DD005 PASS`, 0 findings,
+   `FORMAL_EVAL_SAFE`, exit 0; and a fixture where 20.4 % of rows were blanked around a known
+   crossing entity gave a bare `PASS` as well. "Nothing I can see crosses" was being read as
+   "nothing crosses". Fixed by counting `rows_in_scope` / `rows_without_entity` per declared
+   column, putting the ratio on every DD005 finding, answering zero coverage with
+   `HIGH`/`INCONCLUSIVE`/`BLOCKING` (which `eval_safety` already treats as "not confirmed,
+   not ruled out", so the verdict lands at `INCONCLUSIVE`) and partial coverage on the clean
+   branch with a `LOW`/`NONE` advisory that cannot manufacture a risk verdict. A missing
+   value is still never treated as one shared entity - that would invent 22.77 % cross-split
+   leakage out of absent metadata. `tests/test_dd005_coverage.py`.
+8. **DD006 answered `PASS` for a time column that produced no timestamps at all** - the same
+   acceptance, same wheel. `pd.to_datetime(errors="coerce")` plus `dropna()` left
+   `violating = 0` when nothing parsed, so a config error reported a clean temporal boundary
+   with `skip_reason: null`, and because DD006 is deliberately outside `V01_RULES` (A20)
+   nothing else caught it: `FORMAL_EVAL_SAFE`. Fixed without touching the `V01_RULES` gate:
+   the four unmeasurable paths (column in fewer than two splits, no test-role split has it,
+   nothing parses anywhere, no train/test pair had timestamps on both sides) now return one
+   `HIGH`/`INCONCLUSIVE`/`BLOCKING` finding ending "This is not a PASS", so the rule self-gates
+   through the existing `unproven` branch. The comparison now also requires at least one
+   *comparable* pair, which closes the one-sided case (train parses, test does not).
+   `tests/test_dd005_coverage.py` pins all four plus the direction that must not change: one
+   bad timestamp among good ones stays a limitation, not a refusal.
 
 Pattern worth remembering: each of these was invisible in the code and obvious in a *rendered
 report*. Documentation runs are a test surface - keep writing them per release. Since 2026-09-22
@@ -251,6 +278,9 @@ the column then reads as 2-of-2. Fillers in PII fixtures must be real strings (`
 | UCI HAR, 10 299 rows × 561 features, **published wheel 0.1.0**, official subject-based clean split | 145.6 s wall (142.4 s reported by the tool), `FORMAL_EVAL_RISKY` (two DD007 MEDIUM candidates only), 730 findings, 21 rules: 12 PASS · 4 WARNING · 3 NOT_RUN · 2 UNSUPPORTED · 0 INCONCLUSIVE; **DD005 PASS in 5 ms** on a subject intersection independently computed as ∅ | second real-world acceptance, 2026-09-25, run outside this repository |
 | Same dataset, diagnostic fixture with one subject moved across the boundary | 114.75 s, `FORMAL_EVAL_INVALID`, sole blocking reason DD005 (CRITICAL/BLOCKING, 1 entity, per-split counts 1 test / 346 train, `affected_count` 347) - all four DD005 fields MATCH independent computation; the row locators in `affected_sample_ids` did **not** (defect 6) | same workspace, 2026-09-25 |
 | Candidate `main` (ahead of `origin/main` by 4) on both HAR cases | byte-equivalent verdicts, statuses, severities, findings and every count against the 0.1.0 wheel on the identical inputs; re-auditing the diagnostic at this tree after defect 6 changed only the locators | same workspace, 2026-09-25 |
+| UCI Online Retail II, 1 067 371 rows × 8 columns, **published wheel 0.1.0**, strict chronological split (cutoff 2011-08-09 15:10:00, 821 147 train / 246 224 test), config A: no group column, no label | 149.63 s wall (146.26 s reported by the tool), peak RSS 2 583 MB (subtree), `FORMAL_EVAL_RISKY`, 4 findings, 0 blocking; report.json 39 595 B / .html 40 472 B / .md 23 501 B; slowest rules DD021 47.4 s, DD012 25.0 s; **DD006 PASS in 0.341 s** with `max(train)=2011-08-09 14:57 < min(test)=15:10` independently proven | third real-world acceptance, 2026-09-25, run outside this repository (its `logs/` and `reports/` are not tracked here) |
+| Same dataset, config B (`temporal.column` + `groups.columns: [customer_id]`), wheel 0.1.0 | 148.32 s, peak RSS 2 747 MB, `FORMAL_EVAL_INVALID`, DD005 CRITICAL/BLOCKING 2 455 entities / `affected_count` 628 816 - all five numbers MATCH an independent recomputation; no coverage statement anywhere (defect 7) | same workspace, 2026-09-25 |
+| Same two configs at this tree, after defects 7 and 8 | config A diffs against the wheel in **0** fields; the DD006 clean and known-moved-row diagnostics diff in **0** fields (all five evidence fields unchanged); config B keeps severity/status/`formal_impact`/`affected_count`/entities identical and adds `rows_checked=824 364`, `rows_without_entity=243 007`, `entity_coverage_ratio=0.7723`, 143.5 s / 2 578 MB (A) and 141.0 s / 2 746 MB (B) | same workspace, 2026-09-25 |
 
 ### Scale regression analysis (2026-09-22)
 
@@ -363,6 +393,39 @@ identifier, and DD018/DD019 measure nothing without a baseline - `NOT_RUN` is no
    rule-semantics change on the tool's flagship rule, so it is a release decision, not an
    acceptance-run patch. The evidence the user needs is already in the report: DD009's members
    carry `split`, so the boundary crossing is visible there.
+8. Registered on 2026-09-25 by the UCI Online Retail II acceptance run, **not** fixed (none of
+   them changes a scientific conclusion; the first two are the evidence-scalability boundary
+   that run was designed to probe):
+   - **DD014's counts describe a different quantity than its text does.** On 1 067 371 rows it
+     reports `affected_count: 0` while its own description says 20 928 unseen category values,
+     and each column's `examples` list is capped at 20 with no per-column total. The cap is
+     honest in `report.json` but `location.truncated` only inspects `affected` and `paths`, so
+     a column-scoped or per-key list can be cut with no flag anywhere - a reader of `report.md`
+     takes 20 for the total. Generic to `build_finding`, not to DD014.
+   - **A clean DD006 leaves no evidence of the boundary it checked.** PASS with zero findings
+     emits no evidence object, so "verified strictly ordered" and "nothing to compare" are
+     distinguishable only after this run's defect-8 fix, and even now the PASS carries no
+     `train_max` / `test_min`.
+   - **DD005 example entities print as float-spelled ids** (`17841.0` for a `CustomerID` column
+     pandas read as float64) - the same value read off the CSV as `17841`. Cosmetic, but it is
+     the string a user greps for.
+   - **Two concurrent audits of one tree collide** on `prepared/.dataset-doctor/manifest.jsonl.tmp`
+     (`PermissionError [WinError 32]`, exit 3). Deterministic and recoverable, but the error
+     message names a cache file rather than "another audit is running".
+   - **Cross-version stability of `affected_sample_ids`:** the wheel and this tree sample
+     different 200-row subsets of the same 628 816-row affected set (15 ids in common), because
+     the candidate orders locators by entity. Both are valid samples; a user diffing two
+     reports sees churn.
+   - Zero-prep `scan` of the official `.xlsx` download refuses the workbook (correct: it will
+     not guess which of two sheets is which split), so the discovery UX for a fresh UCI download
+     is "read the docs first". Registered as UX observation only, per the run's own instruction
+     not to change code for it.
+9. Next, in order: the fourth real-world acceptance on an image dataset (MVTec AD) to put
+   DD004/DD016/DD017 under the same independent-ground-truth treatment, since three tabular
+   runs have now covered DD003/DD005/DD006/DD007/DD009/DD013 and the modalities are not
+   interchangeable. After that, decide 0.1.1 as a release (defects 5-8 plus the documentation
+   they moved), and return to the Experiment Doctor / mainline ML research track. No push, tag,
+   release or PyPI upload is authorised by any of these acceptance runs.
 
 ## 11. Scratch state - disposition
 

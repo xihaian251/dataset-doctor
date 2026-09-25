@@ -35,20 +35,49 @@ the boundary to the same person.
    PASS, and the coverage section says so.
 2. Declared columns absent from the data → `InsufficientEvidence` with the sentence
    *"This is not a PASS."*
-3. For each available column, build `entity -> {split: row_count}` across all splits,
-   skipping null/empty values (they identify nobody).
-4. Entities present in more than one split are cross-split. One finding per split pair,
+3. For each available column, build `entity -> {split: row_count}` across all splits.
+   Null/empty/whitespace values identify nobody: they are **counted**, not silently
+   dropped, and the counts travel with every finding as `group_column_rows`,
+   `rows_checked`, `rows_without_entity`, `entity_coverage_ratio`.
+4. If *no* row carries a usable entity value the rule cannot answer anything: one
+   `HIGH` / `INCONCLUSIVE` / `BLOCKING` finding titled *"Group column '<col>' has no usable
+   entity values"*. `INCONCLUSIVE` + `BLOCKING` is the combination the verdict treats as
+   "flagged as potentially invalidating, not confirmed", so a zero-coverage declaration can
+   no longer end in `FORMAL_EVAL_SAFE`.
+5. Entities present in more than one split are cross-split. One finding per split pair,
    `train/test` first.
-5. `affected_count` is the total number of rows on both sides - not the number of
+6. `affected_count` is the total number of rows on both sides - not the number of
    entities - because the rows are what the model saw. The evidence carries the top 20
    entities by row count, with the per-split breakdown:
    `{"group_column": "patient_id", "entities": 12, "examples": [{"entity": "p07", "splits": {"test": 3, "train": 9}}]}`.
+   The same finding carries `entity_coverage` - the confirmed overlap and the size of the
+   unattributable remainder are one statement, not two documents.
    `metadata.affected_sample_ids` lists up to 200 real locators `split:position`, where
    `position` is the 0-based row index inside that split's data rows - a reviewer can
    open it; when more than 200 rows are involved,
    `metadata.affected_sample_ids_truncated` says so.
-6. If nothing crosses the boundary but the column is near-unique overall (unique ratio
+7. If nothing crosses the boundary but the column is near-unique overall (unique ratio
    > 0.98), emit a `LOW` / `FormalImpact.NONE` advisory instead - see False Positives.
+8. If nothing crosses the boundary **and** some rows carried no entity value, emit a
+   second `LOW` / `NONE` advisory: *"Entity check on '<col>' covers 79.6% of rows"*. It
+   states the limit without asserting a risk, so it cannot move the verdict - but a reader
+   can no longer mistake "no shared entity observed" for "proven disjoint". Pinned by
+   `tests/test_dd005_coverage.py::test_partial_entity_coverage_is_stated_on_the_clean_branch`.
+
+## Coverage semantics
+
+A group column is metadata, and metadata goes missing. Three states are deliberately
+distinguishable:
+
+| State | Emitted | Verdict effect |
+| --- | --- | --- |
+| every row attributable, nothing crosses | no DD005 finding | none - genuinely clean |
+| some rows carry no entity value, nothing visible crosses | `LOW`/`NONE` advisory with the ratio | none, but the PASS is now bounded |
+| no row carries a usable entity value | `HIGH`/`INCONCLUSIVE`/`BLOCKING` | `INCONCLUSIVE`, never `SAFE` |
+
+A missing value is never treated as one shared entity: blanking `CustomerID` on 22 % of the
+rows must not manufacture 22 % cross-split "leakage", and must not erase the check either.
+Entity-safety conclusions are therefore only as wide as the coverage ratio says they are.
 
 ## False Positives
 
@@ -75,6 +104,8 @@ the boundary to the same person.
 | --- | --- | --- | --- |
 | train / test | `FAIL` | `CRITICAL` | `BLOCKING` |
 | train / val, val / test | `FAIL` | `HIGH` | `BLOCKING` |
+| declared column, no usable entity value anywhere | `INCONCLUSIVE` | `HIGH` | `BLOCKING` |
+| partial coverage, no visible crossing | `WARNING` | `LOW` | `NONE` |
 
 `BLOCKING` either way: a val split contaminated by test entities still corrupts model
 selection, which propagates into the reported test number without ever crossing the
@@ -104,6 +135,19 @@ DD005-0003 HIGH     FAIL (BLOCKING) - train / val
 and `unsafe_group_leakage` (270 samples) is the isolation case: shared patients with
 **no** duplicate rows, so DD003 stays silent and DD005 is the only thing that speaks -
 `tests/test_examples.py::test_shared_entities_are_found_without_any_row_being_a_duplicate`.
+
+On real data with missing metadata (UCI Online Retail II, 1,067,371 rows, `customer_id`
+declared as the group, strict chronological split at 2011-08-09 15:10):
+
+```text
+CRITICAL DD005-0001 FAIL (BLOCKING) Entity leakage on 'customer_id': test / train
+  entities=2455  affected_count=628816
+  entity_coverage: rows_checked=824364  rows_without_entity=243007  ratio=0.7723
+```
+
+Both halves of that sentence are needed: 2,455 known customers really do cross the boundary,
+and 243,007 rows carry no customer id at all, so the remaining rows cannot be certified
+disjoint either. Independent recomputation of every one of those five numbers matched.
 
 ## Remediation
 

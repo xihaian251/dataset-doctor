@@ -46,25 +46,37 @@ def detect_group_leakage(ctx: AuditContext) -> list[Any]:
     for column in available:
         presence: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
         positions: dict[str, dict[str, list[int]]] = defaultdict(lambda: defaultdict(list))
-        total_rows = 0
+        rows_in_scope = 0
+        rows_without_entity = 0
         for split, frame in by_split.items():
             if column not in frame.columns:
                 continue
             for position, value in enumerate(frame[column].tolist()):
+                rows_in_scope += 1
                 key = _entity_key(value)
                 if key is None:
+                    # An absent entity is not an entity. It is counted here rather than
+                    # passed into the comparison, because skipping it silently is how a
+                    # rule with 20% coverage ends up reporting PASS.
+                    rows_without_entity += 1
                     continue
                 presence[key][split] += 1
                 positions[key][split].append(position)
-                total_rows += 1
+        checked = rows_in_scope - rows_without_entity
+        coverage = _entity_coverage(rows_in_scope, rows_without_entity)
         if not presence:
+            findings.append(_unmeasurable_group_column(ctx, column, coverage, sequence))
+            sequence += 1
             continue
-        unique_ratio = len(presence) / max(total_rows, 1)
+        unique_ratio = len(presence) / max(checked, 1)
         cross = {e: dict(sp) for e, sp in presence.items() if len(sp) > 1}
         if not cross:
             degenerate = _degenerate_group_column(ctx, column, presence, unique_ratio, sequence)
             if degenerate is not None:
                 findings.append(degenerate)
+                sequence += 1
+            if rows_without_entity:
+                findings.append(_partial_entity_coverage(ctx, column, coverage, sequence))
                 sequence += 1
             continue
         for split_a, split_b, entities in _entity_pairs(ctx, cross):
@@ -92,7 +104,10 @@ def detect_group_leakage(ctx: AuditContext) -> list[Any]:
                     target_split=split_b,
                     description=(
                         f"{len(entities)} distinct value(s) of {column} appear in both {split_a} and "
-                        f"{split_b} ({sum(sum(sp.values()) for sp in entities.values())} rows)."
+                        f"{split_b} ({sum(sum(sp.values()) for sp in entities.values())} rows). Entity "
+                        f"metadata covers {checked} of {rows_in_scope} rows "
+                        f"({coverage['entity_coverage_ratio']:.1%}); the remaining {rows_without_entity} "
+                        f"row(s) carry no {column} value and cannot be attributed to any entity."
                     ),
                     why_it_matters=(
                         "The model can meet the same entity at evaluation time that it fitted during "
@@ -102,11 +117,21 @@ def detect_group_leakage(ctx: AuditContext) -> list[Any]:
                     evidence={
                         "group_column": column,
                         "entities": len(entities),
+                        "entity_coverage": coverage,
+                        **coverage,
                         "examples": [
                             {"entity": entity, "splits": splits}
                             for entity, splits in sorted(entities.items(), key=lambda item: -sum(item[1].values()))[:20]
                         ],
                     },
+                    limitations=(
+                        [
+                            f"{rows_without_entity} row(s) carry no {column} value and were not compared, "
+                            "so rows without an entity can still hide a cross-split match."
+                        ]
+                        if rows_without_entity
+                        else []
+                    ),
                     recommended_action=(
                         f"Re-split with `dataset-doctor-audit split <file> --group-by {column}` so every "
                         f"{column} lands in exactly one split, then re-audit."
@@ -120,6 +145,82 @@ def detect_group_leakage(ctx: AuditContext) -> list[Any]:
             )
             sequence += 1
     return findings
+
+
+def _entity_coverage(rows_in_scope: int, rows_without_entity: int) -> dict[str, Any]:
+    checked = rows_in_scope - rows_without_entity
+    ratio = checked / rows_in_scope if rows_in_scope else 0.0
+    return {
+        "group_column_rows": rows_in_scope,
+        "rows_checked": checked,
+        "rows_without_entity": rows_without_entity,
+        "entity_coverage_ratio": round(ratio, 4),
+    }
+
+
+def _unmeasurable_group_column(ctx: AuditContext, column: str, coverage: dict[str, Any], sequence: int) -> Any:
+    """Declared entity column with no usable value anywhere: not a PASS, not a FAIL."""
+    return build_finding(
+        ctx,
+        rule_id="DD005",
+        sequence=sequence,
+        title=f"Group column '{column}' has no usable entity values",
+        category=Category.LEAKAGE,
+        severity=Severity.HIGH,
+        status=AuditStatus.INCONCLUSIVE,
+        evidence_type=EvidenceType.DETERMINISTIC,
+        confidence=Confidence.HIGH,
+        formal_impact=FormalImpact.BLOCKING,
+        affected=[],
+        description=(
+            f"None of the {coverage['group_column_rows']} row(s) carries a usable {column} value, so no "
+            "entity comparison was possible."
+        ),
+        why_it_matters=(
+            "A group column that is empty, all-blank or all-sentinel answers nothing: reporting it as "
+            "clean would certify entity disjointness on zero evidence, which is the one claim an "
+            "entity-disjoint evaluation must never take from this rule."
+        ),
+        evidence={"group_column": column, **coverage},
+        recommended_action=(
+            f"Populate {column} (or point groups.columns at the real entity column), then re-audit. "
+            "Until then the entity-leakage question is unanswered."
+        ),
+        metadata={"scope": "cross_split", "coverage_only": True},
+    )
+
+
+def _partial_entity_coverage(ctx: AuditContext, column: str, coverage: dict[str, Any], sequence: int) -> Any:
+    """No overlap among the rows that carry an entity id, and how much of the data that is."""
+    ratio = float(coverage["entity_coverage_ratio"])
+    return build_finding(
+        ctx,
+        rule_id="DD005",
+        sequence=sequence,
+        title=f"Entity check on '{column}' covers {ratio:.1%} of rows",
+        category=Category.LEAKAGE,
+        severity=Severity.LOW,
+        status=AuditStatus.WARNING,
+        evidence_type=EvidenceType.DETERMINISTIC,
+        confidence=Confidence.HIGH,
+        formal_impact=FormalImpact.NONE,
+        affected=[],
+        description=(
+            f"{coverage['rows_without_entity']} of {coverage['group_column_rows']} row(s) carry no {column} "
+            f"value, so entity leakage was ruled out on {coverage['rows_checked']} rows ({ratio:.1%}) only."
+        ),
+        why_it_matters=(
+            "Rows without an entity id are invisible to a group split: a missing customer can be the same "
+            "customer as a row on the other side. 'No shared entity observed' is therefore weaker than "
+            "'proven disjoint' by exactly this many rows."
+        ),
+        evidence={"group_column": column, **coverage},
+        recommended_action=(
+            f"Backfill {column} (or drop the rows that cannot be attributed) if the evaluation claims "
+            "generalisation to unseen entities."
+        ),
+        metadata={"scope": "cross_split", "coverage_only": True},
+    )
 
 
 def _degenerate_group_column(
@@ -204,21 +305,50 @@ def detect_temporal_leakage(ctx: AuditContext) -> list[Any]:
         if column not in frame.columns:
             continue
         parsed[split] = pd.to_datetime(frame[column], errors="coerce", utc=False)
+    parseable = int(sum(int(series.notna().sum()) for series in parsed.values()))
+    unparseable = int(sum(len(series) for series in parsed.values())) - parseable
     if len(parsed) < 2:
-        raise InsufficientEvidence(f"'{column}' is missing from most splits or could not be parsed as datetime")
+        return [
+            _unmeasurable_temporal_boundary(
+                ctx,
+                column,
+                f"'{column}' is missing from most splits or could not be parsed as datetime",
+                parseable,
+            )
+        ]
     train_splits = [s for s in parsed if ctx.role_of(s) is SplitRole.TRAIN] or ["train"]
     test_splits = [s for s in parsed if ctx.role_of(s) is SplitRole.TEST]
     if not test_splits:
-        raise InsufficientEvidence("no test split with a parseable time column, so ordering cannot be checked")
-    unparseable = int(sum(series.isna().sum() for series in parsed.values()))
+        return [
+            _unmeasurable_temporal_boundary(
+                ctx,
+                column,
+                "no test split has a parseable time column, so ordering cannot be checked",
+                parseable,
+            )
+        ]
+    if parseable == 0:
+        # spec 28: a column that never parses is a config error, not a PASS. Checking zero
+        # timestamps cannot establish anything about the temporal boundary.
+        return [
+            _unmeasurable_temporal_boundary(
+                ctx,
+                column,
+                f"'{column}' produced no parseable timestamp in any split ({unparseable} row value(s) "
+                "excluded), so the temporal boundary cannot be checked",
+                parseable,
+            )
+        ]
     findings: list[Any] = []
     sequence = 1
+    compared = 0
     for train_split in train_splits:
         for test_split in test_splits:
             train_times = parsed[train_split].dropna()
             test_times = parsed[test_split].dropna()
             if train_times.empty or test_times.empty:
                 continue
+            compared += 1
             overlap_start = test_times.min()
             violating = int((train_times >= overlap_start).sum())
             if violating == 0:
@@ -271,7 +401,48 @@ def detect_temporal_leakage(ctx: AuditContext) -> list[Any]:
                 )
             )
             sequence += 1
+    if not compared:
+        return [
+            _unmeasurable_temporal_boundary(
+                ctx,
+                column,
+                "no train/test pair had parseable timestamps on both sides, so the temporal boundary "
+                f"cannot be checked ({unparseable} unparseable value(s) excluded)",
+                parseable,
+            )
+        ]
     return findings
+
+
+def _unmeasurable_temporal_boundary(ctx: AuditContext, column: str, detail: str, parseable: int) -> Any:
+    """temporal.column is declared but the ordering question cannot be answered: not a PASS."""
+    return build_finding(
+        ctx,
+        rule_id="DD006",
+        sequence=1,
+        title=f"Temporal boundary on '{column}' could not be measured",
+        category=Category.LEAKAGE,
+        severity=Severity.HIGH,
+        status=AuditStatus.INCONCLUSIVE,
+        evidence_type=EvidenceType.DETERMINISTIC,
+        confidence=Confidence.HIGH,
+        formal_impact=FormalImpact.BLOCKING,
+        affected=[],
+        description=(
+            f"{detail}. This is not a PASS: a temporal split was declared and no timestamp pair was "
+            "compared, so the tool has no evidence about the boundary either way."
+        ),
+        why_it_matters=(
+            "Reported ordering is the only defence against training on the evaluation window. Reading "
+            "a clean verdict here would take that assurance from a check that never happened."
+        ),
+        evidence={"column": column, "parseable_timestamps": parseable},
+        recommended_action=(
+            f"Fix {column} (parseable ISO timestamps in every split the policy orders), then re-audit. "
+            "Until then the temporal-leakage question is unanswered."
+        ),
+        metadata={"scope": "cross_split", "coverage_only": True},
+    )
 
 
 # --------------------------------------------------------------- DD007 target

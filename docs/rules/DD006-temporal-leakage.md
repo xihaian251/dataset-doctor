@@ -30,14 +30,29 @@ perfect, the schema matches, the labels are clean.
    reason *"policy does not require train to precede test, so time overlap is not an error
    here"*. The rule is **policy-driven**, because whether overlap is a bug is a question
    about the task, not about the bytes.
-2. Parse the column with `pd.to_datetime(errors="coerce")` per split. Fewer than two
-   splits with a parseable column → `InsufficientEvidence`.
+2. Parse the column with `pd.to_datetime(errors="coerce")` per split. A temporal column
+   that was *declared* but cannot be measured is never a PASS: each of the four ways that
+   happens emits one `HIGH` / `INCONCLUSIVE` / `BLOCKING` finding titled *"Temporal boundary
+   on '<col>' could not be measured"*, whose description ends *"This is not a PASS"* and
+   whose evidence carries `parseable_timestamps`:
+   - the column is present in fewer than two splits;
+   - no test-role split has it;
+   - nothing parses in any split (`parseable_timestamps = 0`);
+   - no train/test pair had parseable timestamps on **both** sides, so no comparison ran.
+   `INCONCLUSIVE` + `BLOCKING` is the combination the verdict reads as "flagged as
+   potentially invalidating, not confirmed", which routes the report to `INCONCLUSIVE`
+   instead of letting an unchecked boundary be printed as `FORMAL_EVAL_SAFE`.
 3. Take each train-role split (falling back to a split literally named `train`) against
    each test-role split.
 4. `violating = count(train_time >= min(test_time))`. Any violation fires.
 5. Unparseable values are **excluded from the comparison and counted in the evidence**
    (`unparseable_timestamps`) and in the limitations, so a column that is 40% garbage
    cannot read as a clean pass.
+
+A clean run asserts nothing positive about the boundary beyond the comparison it made: when
+zero violations are found the rule reports `PASS` with no finding and no evidence object, so
+the strongest reading available is "this pair was compared and did not overlap" - not "the
+split is provably safe for forecasting".
 
 The statistic is deliberately coarse - a single boundary comparison, not per-row ordering -
 because it answers "does the training window reach into the evaluation window", which is
@@ -65,6 +80,17 @@ contaminated region than an entity that appears on both sides, and severity diff
 between blocking findings should not be inflated. A `BLOCKING` finding is enough to make
 the verdict `FORMAL_EVAL_INVALID`.
 
+| Situation | Status | Severity | Formal impact |
+| --- | --- | --- | --- |
+| train reaches into the test window | `FAIL` | `HIGH` | `BLOCKING` |
+| declared column, boundary unmeasurable | `INCONCLUSIVE` | `HIGH` | `BLOCKING` |
+| compared, zero violations | `PASS`, no finding | - | - |
+| unset column / policy says overlap is fine | `NOT_RUN` | - | - |
+
+`NOT_RUN` and `INCONCLUSIVE` are different words on purpose. `NOT_RUN` means the question
+was disclaimed in the config; `INCONCLUSIVE` means it was asked and the data could not
+answer it - which is why only the second one gates the verdict.
+
 ## Examples
 
 `examples/leaky_patient_dataset` is built for this: one `cohort.csv` with a `split` column
@@ -79,6 +105,22 @@ DD006-0001 HIGH FAIL (BLOCKING) - train rows dated at or after test
 and `tests/test_examples.py::test_the_mixed_clinical_fixture_catches_the_temporal_inversion_too`
 asserts it fires. DD007-0003 additionally names `collected_at` as a predictive feature
 candidate, which is the same underlying mistake seen from the other side.
+
+On real data (UCI Online Retail II, 1,067,371 rows) the rule was checked both ways with a
+frozen protocol - unique sorted timestamps, `cutoff = T[floor(0.8 * len(T))]`, train `<`
+cutoff, test `>=` cutoff:
+
+```text
+full split (clean)   DD006 PASS, no finding; max(train)=2011-08-09 14:57:00 < min(test)=2011-08-09 15:10:00
+one moved row (leak) DD006-0001 HIGH FAIL (BLOCKING)
+  {"column": "invoice_date", "train_max": "2011-12-08 09:20:00",
+   "test_min": "2011-08-09 15:10:00", "violating_rows": 1, "unparseable_timestamps": 0}
+```
+
+The second is a known-answer test on a 20,000-row stride sample of that same data: exactly
+one globally-unique test row was *moved* (not copied) into the fixture's train split, and
+every evidence field matched an independent recomputation. The first matters just as much -
+a strictly chronological million-row split must not be accused of leakage it does not have.
 
 ## Remediation
 

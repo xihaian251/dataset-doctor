@@ -3,10 +3,7 @@
 All notable changes to Dataset Doctor are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project uses semantic versioning.
 
-## Unreleased (0.1.1 preparation)
-
-- Post-release documentation now points to the published 0.1.0 package and the real repository.
-  This does not change code, version metadata or the immutable 0.1.0 files on PyPI.
+## Unreleased
 
 ### Known issues registered by the first real-world acceptance (UCI Adult), not fixed here
 
@@ -49,6 +46,44 @@ All notable changes to Dataset Doctor are documented here. The format follows
 
 ### Fixed
 
+- **DD005 and DD006 could report a clean check on data they had not compared.** Found by the
+  third real-world acceptance (UCI Online Retail II, 1 067 371 rows, through the installed
+  0.1.0 wheel), and reproducible on 10-row synthetic fixtures, so this is a detector problem
+  and not a quirk of one dataset. Two paths were silent in the same way: an entity column
+  whose value is absent, and a declared time column that yields no comparable timestamps.
+  - DD005 skipped null/empty entity values without counting them, so coverage was invisible
+    in both directions. Measured on 0.1.0: a declared group column empty in every row
+    reported `DD005 PASS`, 0 findings, `FORMAL_EVAL_SAFE`, exit 0 - the tool certified
+    entity disjointness on zero evidence. A fixture where 20.4 % of rows were blanked and a
+    known entity really did cross the boundary reported a bare `PASS` too, because "nothing I
+    can see crosses" and "nothing crosses" printed the same.
+  - DD006 coerced with `errors="coerce"` and then compared whatever survived. If nothing
+    parsed, `violating = 0`, so the rule reported `PASS` with `skip_reason: null` and the
+    verdict stayed `FORMAL_EVAL_SAFE` - on a config error, not on data.
+  - Now rows carry `group_column_rows` / `rows_checked` / `rows_without_entity` /
+    `entity_coverage_ratio` on every DD005 finding; zero usable entity values give one
+    `HIGH` / `INCONCLUSIVE` / `BLOCKING` finding; partial coverage on an otherwise clean
+    column gives a `LOW` / `NONE` advisory, which states the limit without asserting a risk
+    it has not observed. DD006's four unmeasurable paths give the same
+    `HIGH` / `INCONCLUSIVE` / `BLOCKING` finding, ending "This is not a PASS", and its
+    comparison now checks that at least one train/test pair had timestamps on both sides.
+    `INCONCLUSIVE` + `BLOCKING` is the combination `eval_safety` reads as "flagged as
+    potentially invalidating, not confirmed", so both cases land at `INCONCLUSIVE`.
+  - `tests/test_dd005_coverage.py` (6 checks) pins all of it, including the two directions
+    that must not move: a disjoint fully-covered column still yields no DD005 finding, and a
+    partially parseable time column still reaches a verdict rather than refusing.
+    `tests/test_verdict_contract.py` pins the aggregation rule they depend on one level up: a
+    `BLOCKING` check that returned no answer may never be summed into `FORMAL_EVAL_SAFE`,
+    whichever rule failed to answer.
+  - Nothing about a real detection changed. Re-auditing the million-row chronological split
+    with `customer_id` declared gives byte-identical severity, status, `formal_impact`,
+    `affected_count` (628 816 rows / 2 455 entities) and verdict; the finding additionally
+    states `824364 of 1067371 rows (77.2%)`, matching an independent recomputation exactly.
+    The two DD006 diagnostics on real data - the strict-chronological split (PASS) and the
+    single known moved row (1 violating row, all five evidence fields) - are unchanged from
+    0.1.0 field by field, and the no-group/no-label audit of the same data diffs to 0 fields.
+    Cost at 1 067 371 rows: 143.5 s / 2 578 MB against 149.6 s / 2 583 MB (config A) and
+    141.0 s / 2 746 MB against 148.3 s / 2 747 MB (config B).
 - **DD005's row pointers named rows that do not hold the leaked entity.** The second
   real-world acceptance (UCI HAR, through the installed 0.1.0 wheel) found that a
   cross-split `affected_sample_ids` entry was `f"{split}:{i}"` for `i` in
